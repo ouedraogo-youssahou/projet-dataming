@@ -1,0 +1,335 @@
+# ============================================
+# Smart eCommerce Intelligence - Configuration
+# ============================================
+
+# ============================================
+# Configuration Générale
+# ============================================
+app:
+  name: "Smart eCommerce Intelligence"
+  version: "1.0.0"
+  environment: "development"  # development, staging, production
+  debug: true
+  log_level: "INFO"
+
+# ============================================
+# Web Scraping Configuration
+# ============================================
+scraping:
+  # Shopify Configuration
+  shopify:
+    api_version: "2024-01"
+    storefront_api_url: "https://{store}.myshopify.com/api/{version}/graphql.json"
+    access_token: "${SHOPIFY_ACCESS_TOKEN}"
+    rate_limit:
+      requests_per_second: 2
+      max_retries: 3
+      timeout: 30
+  
+  # WooCommerce Configuration
+  woocommerce:
+    api_version: "wc/v3"
+    consumer_key: "${WOOCOMMERCE_CONSUMER_KEY}"
+    consumer_secret: "${WOOCOMMERCE_CONSUMER_SECRET}"
+    rate_limit:
+      requests_per_second: 4
+      max_retries: 3
+      timeout: 30
+  
+  # Selenium Configuration
+  selenium:
+    headless: true
+    browser: "chrome"  # chrome, firefox, edge
+    implicit_wait: 10
+    page_load_timeout: 30
+    window_size: "1920,1080"
+  
+  # Playwright Configuration
+  playwright:
+    browser: "chromium"
+    headless: true
+    slow_mo: 0
+    timeout: 30000
+  
+  # User Agents (rotation)
+  user_agents:
+    - "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+    - "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+  
+  # Data Fields to Extract
+  fields:
+    - product_id
+    - name
+    - description
+    - category
+    - price
+    - compare_at_price
+    - currency
+    - availability
+    - quantity
+    - images
+    - vendor
+    - tags
+    - created_at
+    - updated_at
+    - rating
+    - reviews_count
+
+# ============================================
+# Data Analysis Configuration
+# ============================================
+data_analysis:
+  # Data Processing
+  preprocessing:
+    missing_values_threshold: 0.3
+    outlier_detection: "iqr"  # iqr, zscore, isolation_forest
+    normalization: "standard"  # standard, minmax, robust
+  
+  # Top-K Selection
+  top_k:
+    default_k: 10
+    scoring_weights:
+      rating: 0.3
+      reviews_count: 0.25
+      price_competitiveness: 0.2
+      availability: 0.15
+      recency: 0.1
+  
+  # ML Models
+  models:
+    # Clustering
+    kmeans:
+      n_clusters: 5
+      init: "k-means++"
+      n_init: 10
+      max_iter: 300
+    
+    dbscan:
+      eps: 0.5
+      min_samples: 5
+      metric: "euclidean"
+    
+    hierarchical:
+      linkage: "ward"
+      n_clusters: 5
+  
+    # Classification
+    random_forest:
+      n_estimators: 100
+      max_depth: 10
+      min_samples_split: 5
+      random_state: 42
+    
+    xgboost:
+      n_estimators: 100
+      max_depth: 6
+      learning_rate: 0.1
+      objective: "binary:logistic"
+  
+  # Evaluation Metrics
+  evaluation:
+    test_size: 0.2
+    cv_folds: 5
+    metrics:
+      - "accuracy"
+      - "precision"
+      - "recall"
+      - "f1"
+      - "roc_auc"
+
+# ============================================
+# Kubeflow Pipelines Configuration
+# ============================================
+kubeflow:
+  # Pipeline Settings
+  pipeline:
+    name: "ecommerce-ml-pipeline"
+    description: "ML Pipeline for eCommerce product analysis"
+    version: "v1"
+  
+  # Docker Image
+  docker:
+    image: "ecommerce-ml:latest"
+    registry: "docker.io"
+  
+  # Kubernetes Settings
+  kubernetes:
+    namespace: "ml-pipelines"
+    service_account: "default-editor"
+    image_pull_secrets: ""
+  
+  # Component Resources
+  resources:
+    scraping:
+      cpu: "2"
+      memory: "4Gi"
+    preprocessing:
+      cpu: "2"
+      memory: "4Gi"
+    training:
+      cpu: "4"
+      memory: "8Gi"
+    inference:
+      cpu: "2"
+      memory: "4Gi"
+
+# ============================================
+# Dashboard BI Configuration
+# ============================================
+dashboard:
+  # Streamlit Settings
+  streamlit:
+    title: "Smart eCommerce Intelligence Dashboard"
+    page_icon: "📊"
+    layout: "wide"
+    initial_sidebar_state: "expanded"
+  
+  # Theme
+  theme:
+    primary_color: "#007bff"
+    background_color: "#ffffff"
+    secondary_background_color: "#f0f2f6"
+    font: "sans serif"
+  
+  # Visualization
+  charts:
+    default_type: "plotly"  # plotly, altair, matplotlib
+    color_scheme: "viridis"
+    animation: true
+  
+  # Data Refresh
+  refresh:
+    enabled: true
+    interval_seconds: 300
+
+# ============================================
+# LLM Configuration
+# ============================================
+llm:
+  # OpenAI
+  openai:
+    model: "gpt-4"
+    temperature: 0.7
+    max_tokens: 2000
+    api_key: "${OPENAI_API_KEY}"
+  
+  # Anthropic Claude
+  anthropic:
+    model: "claude-3-opus-20240229"
+    temperature: 0.7
+    max_tokens: 2000
+    api_key: "${ANTHROPIC_API_KEY}"
+  
+  # HuggingFace
+  huggingface:
+    model: "meta-llama/Llama-2-70b-chat-hf"
+    device: "cuda"
+    load_in_8bit: true
+  
+  # LangChain Settings
+  langchain:
+    chain_type: "stuff"  # stuff, map_reduce, refine
+    verbose: true
+    max_retries: 3
+  
+  # Prompt Templates
+  prompts:
+    product_summary: "Summarize the following product: {product_description}"
+    market_analysis: "Analyze the market trends based on: {data}"
+    recommendation: "Provide recommendations for: {product_data}"
+
+# ============================================
+# MCP (Model Context Protocol) Configuration
+# ============================================
+mcp:
+  # Server Configuration
+  server:
+    name: "ecommerce-mcp-server"
+    version: "1.0.0"
+    host: "0.0.0.0"
+    port: 8000
+  
+  # Security
+  security:
+    require_auth: true
+    api_key: "${MCP_API_KEY}"
+    allowed_origins:
+      - "http://localhost:8501"
+      - "http://localhost:3000"
+  
+  # Tools Configuration
+  tools:
+    scraping:
+      enabled: true
+      max_concurrent: 5
+    data_analysis:
+      enabled: true
+    llm:
+      enabled: true
+  
+  # Logging
+  logging:
+    enabled: true
+    log_requests: true
+    log_responses: true
+    log_level: "INFO"
+
+# ============================================
+# Database Configuration
+# ============================================
+database:
+  # PostgreSQL
+  postgresql:
+    host: "${POSTGRES_HOST}"
+    port: 5432
+    database: "ecommerce_db"
+    user: "${POSTGRES_USER}"
+    password: "${POSTGRES_PASSWORD}"
+    pool_size: 10
+    max_overflow: 20
+  
+  # Redis
+  redis:
+    host: "${REDIS_HOST}"
+    port: 6379
+    db: 0
+    password: "${REDIS_PASSWORD}"
+    decode_responses: true
+
+# ============================================
+# CI/CD Configuration
+# ============================================
+cicd:
+  # GitHub Actions
+  github:
+    workflow_file: ".github/workflows/ci-cd.yml"
+    branches:
+      - "main"
+      - "develop"
+  
+  # Docker Registry
+  registry:
+    url: "docker.io"
+    username: "${DOCKER_USERNAME}"
+    password: "${DOCKER_PASSWORD}"
+  
+  # Tests
+  tests:
+    coverage_threshold: 80
+    run_on_push: true
+    run_on_pr: true
+
+# ============================================
+# Environment Variables (reference)
+# ============================================
+# Required environment variables to set:
+# - OPENAI_API_KEY
+# - ANTHROPIC_API_KEY
+# - SHOPIFY_ACCESS_TOKEN
+# - WOOCOMMERCE_CONSUMER_KEY
+# - WOOCOMMERCE_CONSUMER_SECRET
+# - POSTGRES_HOST, POSTGRES_USER, POSTGRES_PASSWORD
+# - REDIS_HOST, REDIS_PASSWORD
+# - MCP_API_KEY
+# - DOCKER_USERNAME, DOCKER_PASSWORD

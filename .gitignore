@@ -1,0 +1,84 @@
+# .gitignore pour Smart eCommerce Intelligence
+
+# Environnements virtuels
+venv/
+env/
+.venv/
+
+# Fichiers de cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Agents (fichiers locaux et configurations)
+.agents/
+
+# Distribution / build
+*.egg-info/
+dist/
+build/
+
+# Jupyter / IPython
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+jupyter_notebook_config.json
+
+# Fichiers locaux et secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+*.crt
+*.p12
+secrets/
+credentials.json
+
+# Système
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Tests / couverture
+htmlcov/
+.coverage
+.pytest_cache/
+*.coverage.*
+
+# Temporaires
+tmp/
+temp/
+*.tmp
+
+# Docker (fichiers sensibles)
+*.env
+docker-compose.override.yml
+
+# Données générées (à conserver hors git)
+data/raw/*
+data/processed/*
+data/models/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/models/.gitkeep
+
+# OS
+*.DS_Store
+Thumbs.db
+
+# Misc
+*.bak
+*.old

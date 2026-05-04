@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "data-science": {
+      "source": "travisjneuman/.claude",
+      "sourceType": "github",
+      "skillPath": "skills/data-science/SKILL.md",
+      "computedHash": "ee1b22b7f2a627dc8acfd52638cecba9a20ace8d0a676119c57e9437c3232d45"
+    }
+  }
+}

@@ -1,0 +1,57 @@
+# Environnements virtuels
+venv/
+env/
+.venv/
+
+# Fichiers de cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / build
+*.egg-info/
+dist/
+build/
+
+# Jupyter / IPython
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+jupyter_notebook_config.json
+
+# Fichiers locaux et secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+*.crt
+*.p12
+secrets/
+credentials.json
+
+# Système
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Tests / couverture
+htmlcov/
+.coverage
+.pytest_cache/
+
+# Temporaires
+tmp/
+temp/
+*.tmp
