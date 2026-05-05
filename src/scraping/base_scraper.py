@@ -13,9 +13,30 @@ class BaseScraper(ABC):
         self.config = config or {}
         self.rate_limit = self.config.get("rate_limit", {})
         self.timeout = self.config.get("timeout", 30)
-        self.headers = self.config.get("headers", {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        })
+        self._user_agents = self.config.get("user_agents", [
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        ])
+        self._ua_index = 0
+        self.headers = self._build_headers()
+
+    def _build_headers(self) -> Dict[str, str]:
+        """Build headers with rotated user agent."""
+        ua = self._user_agents[self._ua_index % len(self._user_agents)]
+        return {
+            "User-Agent": ua,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Encoding": "gzip, deflate",
+            "Connection": "keep-alive",
+        }
+
+    def rotate_user_agent(self) -> Dict[str, str]:
+        """Rotate to next user agent and return new headers."""
+        self._ua_index += 1
+        self.headers = self._build_headers()
+        return self.headers
 
     @abstractmethod
     async def scrape(self, url: str, **kwargs) -> Dict[str, Any]:

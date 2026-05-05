@@ -9,6 +9,7 @@ from src.scraping.shopify_scraper import ShopifyScraper
 from src.scraping.woocommerce_scraper import WooCommerceScraper
 from src.scraping.selenium_scraper import SeleniumScraper
 from src.scraping.playwright_scraper import PlaywrightScraper
+from src.scraping.storage import PostgreSQLStorage
 
 # Data analysis
 from src.data_analysis.ml_models.clustering import ClusteringEngine
@@ -62,6 +63,9 @@ class SmartECommerceIntelligence:
         self.selenium_scraper = SeleniumScraper(config.get("scraping", {}).get("selenium", {}))
         self.playwright_scraper = PlaywrightScraper(config.get("scraping", {}).get("playwright", {}))
 
+        # Storage
+        self.storage = PostgreSQLStorage(config.get("database", {}).get("postgresql", {}))
+
         # ML Engines
         self.clustering = ClusteringEngine(config.get("data_analysis", {}).get("models", {}))
         self.classification = ClassificationEngine(config.get("data_analysis", {}).get("models", {}))
@@ -72,6 +76,8 @@ class SmartECommerceIntelligence:
         self.llm = LLMWrapper(
             openai_key=llm_cfg.get("openai", {}).get("api_key"),
             anthropic_key=llm_cfg.get("anthropic", {}).get("api_key"),
+            deepseek_key=llm_cfg.get("deepseek", {}).get("api_key"),
+            groq_key=llm_cfg.get("groq", {}).get("api_key"),
             config=llm_cfg
         )
 
@@ -116,15 +122,15 @@ class SmartECommerceIntelligence:
 
         # Normalize and score (simplified)
         scored = []
-        max_price = max((p.get("price", 0) for p in products if p.get("price", 0) > 0), default=1)
-        max_rating = max((p.get("rating", 0) for p in products), default=5)
-        max_reviews = max((p.get("reviews_count", 0) for p in products), default=1)
+        max_price = max((p.get("price") or 0 for p in products if (p.get("price") or 0) > 0), default=1)
+        max_rating = max((p.get("rating") or 0 for p in products), default=5)
+        max_reviews = max((p.get("reviews_count") or 0 for p in products), default=1)
 
         for p in products:
-            price = p.get("price", 0)
-            rating = p.get("rating", 0)
-            reviews = p.get("reviews_count", 0)
-            available = 1 if p.get("availability", False) else 0
+            price = p.get("price") or 0
+            rating = p.get("rating") or 0
+            reviews = p.get("reviews_count") or 0
+            available = 1 if (p.get("availability") or False) else 0
             # price_competitiveness: lower is better -> invert
             price_score = (1 - (price / max_price)) if max_price > 0 else 0
             rating_score = (rating / max_rating) if max_rating > 0 else 0
@@ -152,9 +158,9 @@ class SmartECommerceIntelligence:
         X = []
         for p in products:
             X.append([
-                p.get("price", 0),
-                p.get("rating", 0),
-                p.get("reviews_count", 0),
+                (p.get("price") or 0),
+                (p.get("rating") or 0),
+                (p.get("reviews_count") or 0),
             ])
         X = np.array(X)
         scaler = StandardScaler()
@@ -226,6 +232,15 @@ class SmartECommerceIntelligence:
             "clusters": clusters,
             "summary": summary,
         }
+
+    async def store_results(self, products: List[Dict[str, Any]], source: str = "pipeline") -> int:
+        """Store scraped products to PostgreSQL."""
+        try:
+            await self.storage.initialize()
+            return await self.storage.store(products, source_url=source)
+        except Exception as e:
+            logger.error(f"Storage error: {e}")
+            return 0
 
 
 if __name__ == "__main__":

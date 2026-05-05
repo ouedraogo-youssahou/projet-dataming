@@ -189,3 +189,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Expose the main function as run_dashboard for backward compatibility
+run_dashboard = main
+

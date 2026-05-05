@@ -25,6 +25,8 @@ class MCPServer:
         self.llm = LLMWrapper(
             openai_key=config.get("llm_integration", {}).get("openai_key"),
             anthropic_key=config.get("llm_integration", {}).get("anthropic_key"),
+            deepseek_key=config.get("llm_integration", {}).get("deepseek_key"),
+            groq_key=config.get("llm_integration", {}).get("groq_key"),
         )
         self.shopify_scraper = ShopifyScraper(config.get("scraping", {}).get("shopify", {}))
         self.woocommerce_scraper = WooCommerceScraper(config.get("scraping", {}).get("woocommerce", {}))

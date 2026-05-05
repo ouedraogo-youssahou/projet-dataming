@@ -116,8 +116,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install
+
+# Mettre pip à jour
+RUN pip install --upgrade pip
+
+# Installer séparément les paquets lourds (évite les timeouts)
+RUN pip install --default-timeout=1000 torch==2.1.0 lightgbm==4.1.0 xgboost==2.0.0 -i https://pypi.org/simple
+
+# Installer le reste des dépendances
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.org/simple
+
 
 # Copy scraping code
 COPY src/scraping/ ./src/scraping/

@@ -8,17 +8,21 @@ logger = logging.getLogger(__name__)
 
 
 class LLMWrapper:
-    """Unified wrapper for OpenAI and Anthropic LLMs."""
+    """Unified wrapper for OpenAI, Anthropic, DeepSeek, and Groq LLMs."""
 
     def __init__(
         self,
         openai_key: Optional[str] = None,
         anthropic_key: Optional[str] = None,
+        deepseek_key: Optional[str] = None,
+        groq_key: Optional[str] = None,
         config: Optional[Dict[str, Any]] = None,
     ):
         self.config = config or {}
         self.openai_key = openai_key or self.config.get("openai", {}).get("api_key")
         self.anthropic_key = anthropic_key or self.config.get("anthropic", {}).get("api_key")
+        self.deepseek_key = deepseek_key or self.config.get("deepseek", {}).get("api_key")
+        self.groq_key = groq_key or self.config.get("groq", {}).get("api_key")
 
         if self.openai_key:
             openai.api_key = self.openai_key
@@ -34,12 +38,16 @@ class LLMWrapper:
         temperature: float = 0.7,
         **kwargs,
     ) -> str:
-        """Generate completion. provider: 'openai', 'anthropic', or 'auto'."""
+        """Generate completion. provider: 'openai', 'anthropic', 'deepseek', 'groq', or 'auto'."""
         if provider == "auto":
             if self.openai_key:
                 provider = "openai"
             elif self.anthropic_key:
                 provider = "anthropic"
+            elif self.deepseek_key:
+                provider = "deepseek"
+            elif self.groq_key:
+                provider = "groq"
             else:
                 raise RuntimeError("No LLM provider configured")
 
@@ -47,6 +55,10 @@ class LLMWrapper:
             return self._complete_openai(prompt, model, max_tokens, temperature, **kwargs)
         elif provider == "anthropic":
             return self._complete_anthropic(prompt, model, max_tokens, temperature, **kwargs)
+        elif provider == "deepseek":
+            return self._complete_deepseek(prompt, model, max_tokens, temperature, **kwargs)
+        elif provider == "groq":
+            return self._complete_groq(prompt, model, max_tokens, temperature, **kwargs)
         else:
             raise ValueError(f"Unknown provider: {provider}")
 
@@ -92,6 +104,74 @@ class LLMWrapper:
             return message.content[0].text.strip()
         except Exception as e:
             logger.error(f"Anthropic completion error: {e}")
+            raise
+
+    def _complete_deepseek(
+        self,
+        prompt: str,
+        model: Optional[str] = None,
+        max_tokens: int = 500,
+        temperature: float = 0.7,
+        **kwargs,
+    ) -> str:
+        """Complete using DeepSeek API."""
+        import httpx
+        model = model or "deepseek-chat"
+        try:
+            resp = httpx.post(
+                "https://api.deepseek.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {self.deepseek_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": max_tokens,
+                    "temperature": temperature,
+                    **kwargs,
+                },
+                timeout=60,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return data["choices"][0]["message"]["content"].strip()
+        except Exception as e:
+            logger.error(f"DeepSeek completion error: {e}")
+            raise
+
+    def _complete_groq(
+        self,
+        prompt: str,
+        model: Optional[str] = None,
+        max_tokens: int = 500,
+        temperature: float = 0.7,
+        **kwargs,
+    ) -> str:
+        """Complete using Groq API."""
+        import httpx
+        model = model or "mixtral-8x7b-32768"
+        try:
+            resp = httpx.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {self.groq_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": max_tokens,
+                    "temperature": temperature,
+                    **kwargs,
+                },
+                timeout=60,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return data["choices"][0]["message"]["content"].strip()
+        except Exception as e:
+            logger.error(f"Groq completion error: {e}")
             raise
 
     def summarize(self, text: str, max_tokens: int = 300) -> str:

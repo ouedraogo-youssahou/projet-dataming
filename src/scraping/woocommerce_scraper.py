@@ -67,6 +67,44 @@ class WooCommerceScraper(BaseScraper):
             # Fallback basic
             return self.normalize_product({"title": slug or url, "price": 0})
 
+    async def _scrape_html_fallback(self, url: str) -> Dict[str, Any]:
+        """HTML fallback for sites without API access."""
+        import aiohttp
+        import re
+        import json
+
+        await self._throttle()
+        self.rotate_user_agent()
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    url,
+                    headers=self.headers,
+                    timeout=aiohttp.ClientTimeout(total=self.timeout),
+                ) as resp:
+                    html = await resp.text()
+
+            ld_match = re.search(r'<script type="application/ld\+json">(.*?)</script>', html, re.DOTALL)
+            if ld_match:
+                try:
+                    ld = json.loads(ld_match.group(1))
+                    if isinstance(ld, list):
+                        ld = ld[0]
+                    if ld.get("@type") == "Product":
+                        return self.normalize_product({
+                            "title": ld.get("name", ""),
+                            "description": ld.get("description", ""),
+                            "price": ld.get("offers", {}).get("price", 0),
+                            "available": "InStock" in ld.get("offers", {}).get("availability", ""),
+                        })
+                except Exception:
+                    pass
+            return self.normalize_product({"title": url.split("/")[-1]})
+        except Exception as e:
+            logger.error(f"HTML fallback error: {e}")
+            return self.normalize_product({"title": url})
+
     def _get_base_url(self, url: str) -> Optional[str]:
         """Extract base store URL from product URL."""
         # Simple: remove path after domain to get root
