@@ -1,0 +1,303 @@
+# PIPELINE DEFINITION
+# Name: ecommerce-intelligence
+# Description: Scrape → Preprocess → Train → Top-K
+components:
+  comp-preprocess-comp:
+    executorLabel: exec-preprocess-comp
+    inputDefinitions:
+      artifacts:
+        input_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+    outputDefinitions:
+      artifacts:
+        output:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-scrape-comp:
+    executorLabel: exec-scrape-comp
+    inputDefinitions:
+      parameters:
+        config_path:
+          parameterType: STRING
+        targets:
+          parameterType: STRING
+    outputDefinitions:
+      artifacts:
+        output:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-topk-comp:
+    executorLabel: exec-topk-comp
+    inputDefinitions:
+      artifacts:
+        input_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+    outputDefinitions:
+      artifacts:
+        output:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-train-comp:
+    executorLabel: exec-train-comp
+    inputDefinitions:
+      artifacts:
+        input_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+    outputDefinitions:
+      artifacts:
+        model_out:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+      parameters:
+        Output:
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-preprocess-comp:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - preprocess_comp
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'pandas' 'numpy'\
+          \ 'scikit-learn'  &&  python3 -m pip install --quiet --no-warn-script-location\
+          \ 'kfp==2.16.1' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"\
+          3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef preprocess_comp(input_data: Input[Dataset], output: Output[Dataset])\
+          \ -> str:\n    import json, pandas as pd\n    from pathlib import Path\n\
+          \    from sklearn.preprocessing import LabelEncoder\n\n    in_path = Path(input_data.path)\n\
+          \    with open(in_path) as f:\n        products = json.load(f)\n\n    if\
+          \ not products:\n        return \"empty\"\n\n    df = pd.DataFrame(products)\n\
+          \    df = df.fillna({'price': 0, 'rating': 0, 'reviews_count': 0})\n\n \
+          \   for col in ['category', 'vendor']:\n        if col in df.columns:\n\
+          \            le = LabelEncoder()\n            df[f\"{col}_enc\"] = le.fit_transform(df[col].astype(str))\n\
+          \n    out_path = Path(output.path)\n    out_path.parent.mkdir(parents=True,\
+          \ exist_ok=True)\n    with open(out_path, \"w\") as f:\n        json.dump(df.to_dict(orient='records'),\
+          \ f, indent=2, default=str)\n\n    return \"done\"\n\n"
+        image: python:3.11-slim
+    exec-scrape-comp:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - scrape_comp
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'pandas' 'numpy'\
+          \ 'pyyaml'  &&  python3 -m pip install --quiet --no-warn-script-location\
+          \ 'kfp==2.16.1' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"\
+          3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef scrape_comp(config_path: str, targets: str, output: Output[Dataset])\
+          \ -> str:\n    import json, yaml, asyncio\n    from pathlib import Path\n\
+          \    from src.__main__ import SmartECommerceIntelligence\n\n    with open(config_path)\
+          \ as f:\n        config = yaml.safe_load(f)\n\n    targets_list = json.loads(targets)\
+          \ if targets else []\n    engine = SmartECommerceIntelligence(config)\n\
+          \    results = asyncio.run(engine.scrape_all(targets_list))\n\n    all_products\
+          \ = []\n    for r in results:\n        if r.get(\"status\") == \"ok\" and\
+          \ \"data\" in r:\n            data = r[\"data\"]\n            if isinstance(data,\
+          \ list):\n                all_products.extend(data)\n            elif isinstance(data,\
+          \ dict):\n                all_products.append(data)\n\n    out_path = Path(output.path)\n\
+          \    out_path.parent.mkdir(parents=True, exist_ok=True)\n    with open(out_path,\
+          \ \"w\") as f:\n        json.dump(all_products, f, indent=2, default=str)\n\
+          \n    return json.dumps({\"count\": len(all_products)})\n\n"
+        image: python:3.11-slim
+    exec-topk-comp:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - topk_comp
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'pandas' 'numpy'\
+          \  &&  python3 -m pip install --quiet --no-warn-script-location 'kfp==2.16.1'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef topk_comp(input_data: Input[Dataset], output: Output[Dataset])\
+          \ -> str:\n    import json, pandas as pd\n    from pathlib import Path\n\
+          \n    in_path = Path(input_data.path)\n    with open(in_path) as f:\n  \
+          \      products = json.load(f)\n\n    if not products:\n        return \"\
+          empty\"\n\n    df = pd.DataFrame(products)\n    df['_score'] = (\n     \
+          \   0.3 * (df['rating'] / (df['rating'].max() or 5)) +\n        0.25 * (df['reviews_count']\
+          \ / (df['reviews_count'].max() or 1)) +\n        0.2 * (1 - (df['price']\
+          \ / (df['price'].max() or 1))) +\n        0.15 * df['availability'].astype(float)\n\
+          \    )\n\n    top5 = df.nlargest(5, '_score')\n    out_path = Path(output.path)\n\
+          \    out_path.parent.mkdir(parents=True, exist_ok=True)\n    with open(out_path,\
+          \ \"w\") as f:\n        json.dump(top5.to_dict(orient='records'), f, indent=2,\
+          \ default=str)\n\n    return \"done\"\n\n"
+        image: python:3.11-slim
+    exec-train-comp:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - train_comp
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'pandas' 'numpy'\
+          \ 'scikit-learn' 'joblib'  &&  python3 -m pip install --quiet --no-warn-script-location\
+          \ 'kfp==2.16.1' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"\
+          3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef train_comp(input_data: Input[Dataset], model_out: Output[Model])\
+          \ -> str:  # Model is now defined\n    import json, pandas as pd, joblib\n\
+          \    from pathlib import Path\n    from sklearn.cluster import KMeans\n\
+          \    from sklearn.preprocessing import StandardScaler\n\n    in_path = Path(input_data.path)\n\
+          \    with open(in_path) as f:\n        products = json.load(f)\n\n    if\
+          \ not products:\n        return \"no_data\"\n\n    df = pd.DataFrame(products)\n\
+          \    X = df[['price', 'rating', 'reviews_count']].fillna(0).values\n\n \
+          \   scaler = StandardScaler()\n    X_scaled = scaler.fit_transform(X)\n\n\
+          \    kmeans = KMeans(n_clusters=5, random_state=42, n_init=10)\n    labels\
+          \ = kmeans.fit_predict(X_scaled)\n\n    model_dir = Path(model_out.path).parent\n\
+          \    model_dir.mkdir(parents=True, exist_ok=True)\n    joblib.dump(kmeans,\
+          \ model_dir / \"kmeans.pkl\")\n    joblib.dump(scaler, model_dir / \"scaler.pkl\"\
+          )\n\n    return \"trained\"\n\n"
+        image: python:3.11-slim
+pipelineInfo:
+  description: "Scrape \u2192 Preprocess \u2192 Train \u2192 Top-K"
+  name: ecommerce-intelligence
+root:
+  dag:
+    tasks:
+      preprocess-comp:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-preprocess-comp
+        dependentTasks:
+        - scrape-comp
+        inputs:
+          artifacts:
+            input_data:
+              taskOutputArtifact:
+                outputArtifactKey: output
+                producerTask: scrape-comp
+        taskInfo:
+          name: preprocess-comp
+      scrape-comp:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-scrape-comp
+        inputs:
+          parameters:
+            config_path:
+              runtimeValue:
+                constant: /app/config/config.yaml
+            targets:
+              runtimeValue:
+                constant: '[{"platform": "shopify", "url": "https://storefront-demo.myshopify.com"}]'
+        taskInfo:
+          name: scrape-comp
+      topk-comp:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-topk-comp
+        dependentTasks:
+        - preprocess-comp
+        inputs:
+          artifacts:
+            input_data:
+              taskOutputArtifact:
+                outputArtifactKey: output
+                producerTask: preprocess-comp
+        taskInfo:
+          name: topk-comp
+      train-comp:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-train-comp
+        dependentTasks:
+        - preprocess-comp
+        inputs:
+          artifacts:
+            input_data:
+              taskOutputArtifact:
+                outputArtifactKey: output
+                producerTask: preprocess-comp
+        taskInfo:
+          name: train-comp
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.16.1

@@ -73,10 +73,32 @@ docker compose down -v
 # Reconstruire un service spécifique
 docker compose build [service]
 
-# Lancer les tests et lint localement
+# Lancer les tests et lint
 make test
 make lint
 make format
+
+# Lancer les tests dans Docker
+make test-docker
+
+# Compiler le pipeline Kubeflow
+make pipeline
+
+# Lancer le cluster d'agents A2A (production)
+make agents-start
+
+# Lancer le scheduler (tâches planifiées)
+make scheduler-start
+
+# Lancer l'exporteur de métriques Prometheus
+make metrics-start
+
+# Accéder aux services :
+# - Dashboard Streamlit : http://localhost:8501
+# - Jupyter Notebook    : http://localhost:8888
+# - pgAdmin (PostgreSQL): http://localhost:5050
+# - MCP Server          : http://localhost:8000
+# - Prometheus Metrics  : http://localhost:9090/metrics
 ```
 
 ---
@@ -150,6 +172,7 @@ DATA MINING/
 - Extraction de données depuis Shopify et WooCommerce
 - Utilisation de Selenium, Playwright, Scrapy
 - Agents autonomes pour le scraping distribué
+- **Orchestrateur** pour distribution de tâches et équilibrage de charge
 
 ### 2. Analyse ML et Data Mining
 - **Top-K Selection** : Sélection des meilleurs produits
@@ -158,25 +181,35 @@ DATA MINING/
 - **Règles d'association** : Analyse du panier
 - **PCA** : Réduction dimensionnelle pour visualisation
 
-### 3. Kubeflow Pipelines
-- Orchestration des étapes ML
-- CI/CD avec GitHub Actions
-- Conteneurisation avec Docker
+### 3. Kubeflow Pipelines ( maintenant COMPLET! )
+- Pipeline DAG complet: scraping → preprocessing → training → top-k → LLM summary
+- 5 composants Kubeflow définis
+- Compilation YAML automatique
+- Orchestration ML en production
+- **Fichiers:** `src/pipelines/kubeflow/pipeline.py`, `run_pipeline.py`
 
 ### 4. Dashboard BI
 - Visualisation interactive avec Streamlit
 - KPIs et graphiques Plotly/Seaborn
 - Tableaux de bord décisionnels
+- Mode démo inclus
 
 ### 5. LLM pour enrichissement
 - Génération de synthèses automatiques
 - Analyse concurrentielle augmentée
 - Recommandations stratégiques
+- Support multi-provider (OpenAI, Anthropic, DeepSeek, Groq)
 
 ### 6. Architecture MCP
 - Model Context Protocol d'Anthropic
 - Agents responsables et sécurisés
 - Journalisation et permissions
+- API REST FastAPI
+
+### 7. Services additionnels (optionnels)
+- **Scheduler** : Tâches périodiques (scraping daily, retrain weekly)
+- **Prometheus Exporter** : Métriques temps réel
+- **Agent Cluster** : Lancement distribué des agents A2A
 
 ---
 

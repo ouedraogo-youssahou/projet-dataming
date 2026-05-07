@@ -1,0 +1,119 @@
+# ============================================
+# Kubeflow Pipeline Configuration
+# ============================================
+
+pipeline:
+  name: "ecommerce-ml-pipeline"
+  description: "ML Pipeline for eCommerce product analysis - Scraping → Preprocessing → Training → Evaluation → Inference"
+  version: "v1"
+
+  # Default root directory inside containers
+  root_dir: "/app"
+
+  # Docker images for each component
+  images:
+    base: "ecommerce-ml:latest"
+    scraping: "ecommerce-ml-scraper:latest"
+    ml: "ecommerce-ml-training:latest"
+
+  # Pipeline execution settings
+  execution:
+    max_retries: 2
+    timeout_seconds: 3600
+    parallel_steps: true
+
+# ============================================
+# Component-specific configuration
+# ============================================
+components:
+  scraping:
+    enabled: true
+    image: "ecommerce-ml-scraper:latest"
+    cpu: "2"
+    memory: "4Gi"
+    max_concurrent: 5
+
+  preprocessing:
+    enabled: true
+    image: "ecommerce-ml-training:latest"
+    cpu: "2"
+    memory: "4Gi"
+    missing_threshold: 0.3
+    normalize: true
+    encoding: "label"
+
+  training:
+    enabled: true
+    image: "ecommerce-ml-training:latest"
+    cpu: "4"
+    memory: "8Gi"
+
+    # Models to train
+    models:
+      clustering:
+        enabled: true
+        kmeans:
+          n_clusters: 5
+        dbscan:
+          eps: 0.5
+          min_samples: 5
+        hierarchical:
+          n_clusters: 5
+
+      classification:
+        enabled: true
+        random_forest:
+          n_estimators: 100
+          max_depth: 10
+        xgboost:
+          n_estimators: 100
+          max_depth: 6
+          learning_rate: 0.1
+
+      association:
+        enabled: true
+        min_support: 0.05
+        min_confidence: 0.5
+        min_lift: 1.0
+
+  evaluation:
+    enabled: true
+    image: "ecommerce-ml-training:latest"
+    cpu: "2"
+    memory: "4Gi"
+    test_size: 0.2
+    cv_folds: 5
+    metrics:
+      - "accuracy"
+      - "precision"
+      - "recall"
+      - "f1"
+      - "roc_auc"
+
+  inference:
+    enabled: true
+    image: "ecommerce-ml-training:latest"
+    cpu: "1"
+    memory: "2Gi"
+    top_k: 10
+
+# ============================================
+# Data paths
+# ============================================
+data:
+  raw: "/app/data/raw"
+  processed: "/app/data/processed"
+  models: "/app/data/models"
+  results: "/app/data/results"
+
+# ============================================
+# Kubernetes settings
+# ============================================
+kubernetes:
+  namespace: "ml-pipelines"
+  service_account: "default-editor"
+  image_pull_secrets: ""
+  volumes:
+    - name: data-volume
+      persistent_volume_claim:
+        claim_name: ecommerce-data-pvc

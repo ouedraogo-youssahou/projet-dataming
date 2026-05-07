@@ -43,13 +43,15 @@ RUN pip install --no-cache-dir \
     ipython \
     jupyter \
     jupyterlab \
-    debugpy
+    debugpy \
+    kfp==2.0.0 \
+    apscheduler
 
 # Copy source code
 COPY . .
 
 # Expose ports
-EXPOSE 8501 8888 8000
+EXPOSE 8501 8888 8000 9090
 
 # Set environment for development
 ENV PYTHON_ENV=development
@@ -192,3 +194,32 @@ EXPOSE 8000
 
 # Default command for MCP server
 CMD ["python", "-m", "uvicorn", "src.mcp.server:app", "--host", "0.0.0.0", "--port", "8000"]
+
+
+# ============================================
+# Stage 7: Agent Orchestrator (NEW)
+# ============================================
+FROM base as agent-orchestrator
+
+# Install orchestration & monitoring dependencies
+RUN pip install --no-cache-dir \
+    apscheduler \
+    prometheus-client
+
+# Copy source code for agents, scheduler, monitoring
+COPY src/scraping/agents/ ./src/scraping/agents/
+COPY src/scraping/main.py ./src/scraping/main.py
+COPY src/scheduler/ ./src/scheduler/
+COPY src/monitoring/ ./src/monitoring/
+COPY src/__main__.py ./src/__main__.py
+COPY config/ ./config/
+COPY data/ ./data/
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash agentuser && \
+    chown -R agentuser:agentuser /app
+
+USER agentuser
+
+# Default: launch agent cluster
+CMD ["python", "-m", "src.scraping.agents.main"]

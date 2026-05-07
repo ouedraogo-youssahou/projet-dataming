@@ -284,6 +284,35 @@ mcp:
     log_level: "INFO"
 
 # ============================================
+# A2A Agents Configuration
+# ============================================
+agents:
+  a2a:
+    enabled: true
+    heartbeat_interval: 30       # seconds between heartbeats
+    message_timeout: 60          # seconds before message expires
+    task_timeout: 300            # seconds before task times out
+    max_retries: 3
+    use_redis: false             # false = asyncio.Queue (dev), true = Redis Pub/Sub (prod)
+    buffer_size: 50              # products before flush to storage
+    flush_interval: 30           # seconds between storage flushes
+  
+  # Default agent capabilities
+  defaults:
+    shopify:
+      max_concurrent: 5
+      rate_limit: 2.0
+    woocommerce:
+      max_concurrent: 5
+      rate_limit: 4.0
+    generic:
+      max_concurrent: 3
+      rate_limit: 1.0
+    data_collector:
+      max_concurrent: 10
+      rate_limit: 0
+
+# ============================================
 # Database Configuration
 # ============================================
 database:

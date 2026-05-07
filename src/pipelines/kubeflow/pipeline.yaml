@@ -1,0 +1,204 @@
+# ============================================
+# Kubeflow Pipeline - Manually Crafted YAML
+# This is the compiled pipeline manifest (Argo Workflow)
+# ============================================
+
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: ecommerce-pipeline-
+  annotations:
+    pipelines.kubeflow.org/pipeline_spec: >
+      {"description": "End-to-end eCommerce ML pipeline",
+       "name": "ecommerce-ml-pipeline", "version": "v1"}
+spec:
+  entrypoint: ecommerce-pipeline
+  templates:
+    # ============================================
+    # Main Pipeline Steps DAG
+    # ============================================
+    - name: ecommerce-pipeline
+      steps:
+        - - name: scrape
+            template: scrape-products
+        - - name: preprocess
+            template: preprocess-data
+            dependencies:
+              - scrape
+        - - name: train
+            template: train-models
+            dependencies:
+              - preprocess
+        - - name: top-k
+            template: select-top-k
+            dependencies:
+              - preprocess
+        - - name: summary
+            template: generate-summary
+            dependencies:
+              - train
+              - top-k
+
+    # ============================================
+    # Step 1: Scrape Products
+    # ============================================
+    - name: scrape-products
+      container:
+        image: datamining-dashboard:latest
+        command: ["python", "-m", "src.pipelines.kubeflow.scraping_component"]
+        args:
+          - --config_path
+          - /app/config/config.yaml
+          - --output_path
+          - /app/data/raw/scraped_products.json
+        volumeMounts:
+          - name: config-volume
+            mountPath: /app/config
+          - name: data-volume
+            mountPath: /app/data
+      outputs:
+        artifacts:
+          - name: output-data
+            path: /app/data/raw/scraped_products.json
+            type: dataset
+
+    # ============================================
+    # Step 2: Preprocess Data
+    # ============================================
+    - name: preprocess-data
+      inputs:
+        artifacts:
+          - name: input-data
+            path: /app/data/raw/scraped_products.json
+      container:
+        image: datamining-dashboard:latest
+        command: ["python", "-m", "src.pipelines.kubeflow.preprocessing_component"]
+        args:
+          - --input_path
+          - /app/data/raw/scraped_products.json
+          - --config_path
+          - /app/config/config.yaml
+          - --output_path
+          - /app/data/processed/preprocessed_products.json
+        volumeMounts:
+          - name: config-volume
+            mountPath: /app/config
+          - name: data-volume
+            mountPath: /app/data
+      outputs:
+        artifacts:
+          - name: output-data
+            path: /app/data/processed/preprocessed_products.json
+            type: dataset
+
+    # ============================================
+    # Step 3: Train Models
+    # ============================================
+    - name: train-models
+      inputs:
+        artifacts:
+          - name: preprocessed-data
+            path: /app/data/processed/preprocessed_products.json
+      container:
+        image: datamining-dashboard:latest
+        command: ["python", "-c"]
+        args:
+          - |
+            import sys
+            sys.path.insert(0, '/app')
+            from src.pipelines.kubeflow.pipeline import train_models_kfp
+            result = train_models_kfp(
+                config_path='/app/config/config.yaml',
+                preprocessed_data={'path': '/app/data/processed/preprocessed_products.json'},
+                model_output={'path': '/app/data/models/model_bundle.json'}
+            )
+            print(result)
+        volumeMounts:
+          - name: config-volume
+            mountPath: /app/config
+          - name: data-volume
+            mountPath: /app/data
+      outputs:
+        artifacts:
+          - name: model-output
+            path: /app/data/models/model_bundle.json
+            type: model
+
+    # ============================================
+    # Step 4: Select Top-K
+    # ============================================
+    - name: select-top-k
+      inputs:
+        artifacts:
+          - name: preprocessed-data
+            path: /app/data/processed/preprocessed_products.json
+      container:
+        image: datamining-dashboard:latest
+        command: ["python", "-c"]
+        args:
+          - |
+            import sys
+            sys.path.insert(0, '/app')
+            from src.pipelines.kubeflow.pipeline import select_top_k_kfp
+            result = select_top_k_kfp(
+                config_path='/app/config/config.yaml',
+                preprocessed_data={'path': '/app/data/processed/preprocessed_products.json'},
+                top_k_output={'path': '/app/data/analysis/top_k_products.json'}
+            )
+            print(result)
+        volumeMounts:
+          - name: config-volume
+            mountPath: /app/config
+          - name: data-volume
+            mountPath: /app/data
+      outputs:
+        artifacts:
+          - name: top-k-output
+            path: /app/data/analysis/top_k_products.json
+            type: dataset
+
+    # ============================================
+    # Step 5: Generate LLM Summary
+    # ============================================
+    - name: generate-summary
+      inputs:
+        artifacts:
+          - name: scraped-data
+            path: /app/data/raw/scraped_products.json
+          - name: top-k-data
+            path: /app/data/analysis/top_k_products.json
+      container:
+        image: datamining-dashboard:latest
+        command: ["python", "-c"]
+        args:
+          - |
+            import sys
+            sys.path.insert(0, '/app')
+            from src.pipelines.kubeflow.pipeline import generate_llm_summary_kfp
+            result = generate_llm_summary_kfp(
+                config_path='/app/config/config.yaml',
+                scraped_data={'path': '/app/data/raw/scraped_products.json'},
+                top_k_data={'path': '/app/data/analysis/top_k_products.json'},
+                summary_output={'path': '/app/data/analysis/summary.txt'}
+            )
+            print(result)
+        volumeMounts:
+          - name: config-volume
+            mountPath: /app/config
+          - name: data-volume
+            mountPath: /app/data
+      outputs:
+        artifacts:
+          - name: summary-output
+            path: /app/data/analysis/summary.txt
+            type: text
+
+    # ============================================
+    # Volumes (must be created as PVCs in cluster)
+    # ============================================
+    - name: config-volume
+      persistentVolumeClaim:
+        claimName: config-pvc
+    - name: data-volume
+      persistentVolumeClaim:
+        claimName: data-pvc

@@ -44,7 +44,7 @@ services:
       start_period: 40s
 
   # ============================================
-  # Scraping Service
+  # Scraping Service (direct scraping)
   # ============================================
   scraper:
     build:
@@ -246,6 +246,120 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  # ============================================
+  # A2A Agent Cluster (Production Mode)
+  # ============================================
+  agent-cluster:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: agent-orchestrator
+    container_name: ecommerce-agent-cluster
+    volumes:
+      - ./src:/app/src
+      - ./config:/app/config
+      - ./data/raw:/app/data/raw
+    environment:
+      - PYTHON_ENV=production
+      - SHOPIFY_ACCESS_TOKEN=${SHOPIFY_ACCESS_TOKEN}
+      - WOOCOMMERCE_CONSUMER_KEY=${WOOCOMMERCE_CONSUMER_KEY}
+      - WOOCOMMERCE_CONSUMER_SECRET=${WOOCOMMERCE_CONSUMER_SECRET}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - USE_REDIS=true
+      - AGENT_HEARTBEAT_INTERVAL=30
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+    profiles:
+      - production
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ============================================
+  # Scheduler Service
+  # ============================================
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: ecommerce-scheduler
+    volumes:
+      - ./src:/app/src
+      - ./config:/app/config
+    environment:
+      - PYTHON_ENV=production
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - SCRAPING_SCHEDULE=0 3 * * *      # Daily at 3 AM
+      - ML_RETRAIN_SCHEDULE=0 4 * * 0    # Weekly Sunday 4 AM
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+    profiles:
+      - production
+    command: ["python", "-m", "src.scheduler.main"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "from src.scheduler.main import TaskScheduler; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ============================================
+  # Prometheus Metrics Exporter
+  # ============================================
+  metrics-exporter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: ecommerce-metrics-exporter
+    volumes:
+      - ./src:/app/src
+      - ./config:/app/config
+    environment:
+      - PYTHON_ENV=production
+      - PROMETHEUS_PORT=9090
+      - POSTGRES_HOST=postgres
+      - REDIS_HOST=redis
+    networks:
+      - ecommerce-network
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    profiles:
+      - monitoring
+      - production
+    command: ["python", "-m", "src.monitoring.prometheus_exporter"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/metrics"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 # ============================================
 # Networks

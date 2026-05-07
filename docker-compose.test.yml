@@ -1,0 +1,245 @@
+# ============================================
+# Test Runner Service - Docker Compose Profile
+# ============================================
+
+services:
+  # ============================================
+  # Test Runner - Executes pytest suite
+  # ============================================
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: ecommerce-test-runner
+    volumes:
+      - ./src:/app/src
+      - ./config:/app/config
+      - ./tests:/app/tests
+      - ./data:/app/data
+      - ./test-results:/app/test-results
+      - ./coverage-report:/app/coverage-report
+    environment:
+      - PYTHON_ENV=test
+      - PYTHONPATH=/app
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-test-key}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-test-key}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=${POSTGRES_USER:-ecommerce_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-test_password}
+      - REDIS_HOST=redis
+      - MCP_API_KEY=${MCP_API_KEY:-test-mcp-key}
+      - SHOPIFY_ACCESS_TOKEN=${SHOPIFY_ACCESS_TOKEN:-test-token}
+      - WOOCOMMERCE_CONSUMER_KEY=${WOOCOMMERCE_CONSUMER_KEY:-test-key}
+      - WOOCOMMERCE_CONSUMER_SECRET=${WOOCOMMERCE_CONSUMER_SECRET:-test-secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ecommerce-network
+    command: >
+      bash -c "
+        echo '=== Running Test Suite ===' &&
+        pip install -r requirements.txt &&
+        python -m pytest tests/ -v --tb=short --cov=src --cov-report=term-missing --cov-report=html:coverage-report --cov-fail-under=70
+      "
+    profiles:
+      - test
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "python", "-m", "pytest", "--collect-only"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ============================================
+  # Linter & Type Checker
+  # ============================================
+  lint:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: ecommerce-linter
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./config:/app/config
+    environment:
+      - PYTHON_ENV=test
+    networks:
+      - ecommerce-network
+    command: >
+      bash -c "
+        echo '=== Running Linter (ruff) ===' &&
+        pip install ruff black mypy &&
+        ruff check src/ tests/ --fix &&
+        ruff format src/ tests/ &&
+        echo '=== Running Type Check (mypy) ===' &&
+        mypy src/ --ignore-missing-imports
+      "
+    profiles:
+      - test
+    restart: "no"
+
+  # ============================================
+  # Integration Tests (with real services)
+  # ============================================
+  integration-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: ecommerce-integration-tests
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./config:/app/config
+      - ./data:/app/data
+      - ./integration-results:/app/integration-results
+    environment:
+      - PYTHON_ENV=test
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=${POSTGRES_USER:-ecommerce_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-test_password}
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - MCP_API_KEY=${MCP_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      dashboard:
+        condition: service_healthy
+      mcp-server:
+        condition: service_healthy
+      scraper:
+        condition: service_healthy
+    networks:
+      - ecommerce-network
+    command: >
+      bash -c "
+        echo '=== Running Integration Tests ===' &&
+        pip install -r requirements.txt &&
+        python -m pytest tests/integration/ -v --tb=short -m integration &&
+        echo 'Integration tests completed'
+      "
+    profiles:
+      - test
+    restart: "no"
+
+  # ============================================
+  # Agent Launcher (Production mode)
+  # ============================================
+  agent-launcher:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: scraper
+    container_name: ecommerce-agent-launcher
+    volumes:
+      - ./src:/app/src
+      - ./config:/app/config
+      - ./data/raw:/app/data/raw
+    environment:
+      - PYTHON_ENV=production
+      - SHOPIFY_ACCESS_TOKEN=${SHOPIFY_ACCESS_TOKEN}
+      - WOOCOMMERCE_CONSUMER_KEY=${WOOCOMMERCE_CONSUMER_KEY}
+      - WOOCOMMERCE_CONSUMER_SECRET=${WOOCOMMERCE_CONSUMER_SECRET}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - USE_REDIS=true
+      - AGENT_MAX_CONCURRENT=5
+      - AGENT_HEARTBEAT_INTERVAL=30
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ecommerce-network
+    command: >
+      bash -c "
+        echo '=== Starting A2A Agent Cluster ===' &&
+        python -m src.scraping.agents.main
+      "
+    profiles:
+      - agents
+    restart: unless-stopped
+    deploy:
+      replicas: 1
+
+  # ============================================
+  # Scheduler (Celery/APScheduler)
+  # ============================================
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: ecommerce-scheduler
+    volumes:
+      - ./src:/app/src
+      - ./config:/app/config
+    environment:
+      - PYTHON_ENV=production
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_HOST=redis
+      - SCRAPING_SCHEDULE='0 3 * * *'  # Daily at 3 AM
+      - ML_RETRAIN_SCHEDULE='0 4 * * 0'  # Weekly on Sunday at 4 AM
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ecommerce-network
+    command: >
+      bash -c "
+        echo '=== Starting Scheduler ===' &&
+        python -m src.scheduler.main
+      "
+    profiles:
+      - production
+    restart: unless-stopped
+
+  # ============================================
+  # Prometheus Metrics Exporter
+  # ============================================
+  metrics-exporter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: ecommerce-metrics-exporter
+    volumes:
+      - ./src:/app/src
+      - ./config:/app/config
+    environment:
+      - PYTHON_ENV=production
+      - PROMETHEUS_PORT=9090
+      - POSTGRES_HOST=postgres
+      - REDIS_HOST=redis
+    networks:
+      - ecommerce-network
+    ports:
+      - "9090:9090"
+    command: >
+      bash -c "
+        echo '=== Starting Metrics Exporter ===' &&
+        python -m src.monitoring.prometheus_exporter
+      "
+    profiles:
+      - monitoring
+    restart: unless-stopped
