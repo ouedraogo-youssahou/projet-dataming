@@ -1,9 +1,11 @@
 # ============================================
-# Smart eCommerce Intelligence - Dockerfile
+# Smart eCommerce Intelligence - Dockerfile Optimisé
 # ============================================
+# Stratégie : requirements séparés par service pour réduire la taille des images
+# Chaque stage n'installe QUE ce dont il a besoin.
 
 # ============================================
-# Stage 1: Base Image
+# Stage 1: Base Image - Dépendances communes à TOUS les services
 # ============================================
 FROM python:3.11-slim as base
 
@@ -14,212 +16,191 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     DEBIAN_FRONTEND=noninteractive
 
-# Set work directory
 WORKDIR /app
 
-# Install system dependencies
+# Install minimal system dependencies (communes)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
-    git \
-    wget \
-    vim \
-    htop \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt .
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copier et installer UNIQUEMENT les dépendances de base
+COPY requirements-base.txt .
+RUN pip install --no-cache-dir -r requirements-base.txt
 
 # ============================================
-# Stage 2: Development Image
+# Stage 2: Dashboard (streamlit + plots, pas de torch/ML lourd)
 # ============================================
-FROM base as development
-
-# Install additional development tools
-RUN pip install --no-cache-dir \
-    ipython \
-    jupyter \
-    jupyterlab \
-    debugpy \
-    kfp==2.0.0 \
-    apscheduler
-
-# Copy source code
-COPY . .
-
-# Expose ports
-EXPOSE 8501 8888 8000 9090
-
-# Set environment for development
-ENV PYTHON_ENV=development
-
-# Health check for development services
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8501')" || exit 1
-
-# Default command
-CMD ["python", "-m", "streamlit", "run", "src/dashboard/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
-
-# ============================================
-# Stage 3: Production Image
-# ============================================
-FROM base as production
-
-# Create non-root user for security
-RUN useradd --create-home --shell /bin/bash appuser && \
-    chown -R appuser:appuser /app
-
-# Switch to non-root user
-USER appuser
-
-# Copy only necessary files
-COPY --chown=appuser:appuser . .
-
-# Pre-compile Python files
-RUN python -m compileall /app
-
-# Expose ports
-EXPOSE 8501
-
-# Set environment for production
-ENV PYTHON_ENV=production
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8501')" || exit 1
-
-# Run with gunicorn for production
-CMD ["gunicorn", "--bind", "0.0.0.0:8501", "--workers", "4", "--timeout", "120", "streamlit.web.cli:main", "run", "src/dashboard/app.py"]
-
-# ============================================
-# Stage 4: Scraping Service (Lightweight)
-# ============================================
-FROM python:3.11-slim as scraper
-
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+FROM base as dashboard
 
 WORKDIR /app
 
-# Install system dependencies for Selenium/Playwright + dumb-init for signal handling
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget \
-    gnupg \
-    dumb-init \
-    && rm -rf /var/lib/apt/lists/*
+# Copier et installer UNIQUEMENT les dépendances dashboard
+COPY requirements-dashboard.txt .
+RUN pip install --no-cache-dir -r requirements-dashboard.txt
 
-    # Install Chrome/Chromium for Selenium
-    RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome-archive-keyring.gpg && \
-        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-archive-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list && \
-        apt-get update && apt-get install -y google-chrome-stable && \
-        rm -rf /var/lib/apt/lists/*
-
-# Copy requirements and install
-
-# Mettre pip à jour
-RUN pip install --upgrade pip
-
-# Installer séparément les paquets lourds (évite les timeouts)
-RUN pip install --default-timeout=1000 torch==2.1.0 lightgbm==4.1.0 xgboost==2.0.0 -i https://pypi.org/simple
-
-# Installer le reste des dépendances
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.org/simple
-
-
-# Copy scraping code
-COPY src/scraping/ ./src/scraping/
-COPY config/ ./config/
-
-# Create output directory and non-root user
-RUN mkdir -p /app/data/raw && \
-    useradd --create-home --shell /bin/bash scraper && \
-    chown -R scraper:scraper /app
-
-# Switch to non-root user
-USER scraper
-
-# Default command for scraping
-CMD ["dumb-init", "--", "python", "-m", "src.scraping.main"]
-
-# ============================================
-# Stage 5: ML Training Service
-# ============================================
-FROM base as ml-training
-
-# Install additional ML dependencies
-RUN pip install --no-cache-dir \
-    optuna \
-    wandb
-
-# Copy source code
+# Copier les sources nécessaires
+COPY src/dashboard/ ./src/dashboard/
 COPY src/data_analysis/ ./src/data_analysis/
 COPY config/ ./config/
 COPY data/ ./data/
 
-# Create models directory
+# Expose port
+EXPOSE 8501
+
+# Health check léger
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8501')" || exit 1
+
+CMD ["python", "-m", "streamlit", "run", "src/dashboard/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+
+# ============================================
+# Stage 3: Scraper Service (léger, sans torch/ML/numpy lourd)
+# ============================================
+FROM python:3.11-slim as scraper
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+# Install Chrome/Chromium pour Selenium + dumb-init
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget gnupg dumb-init \
+    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome-archive-keyring.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-archive-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update && apt-get install -y --no-install-recommends google-chrome-stable \
+    && rm -rf /var/lib/apt/lists/*
+
+# Mettre à jour pip (correction bug JSON decode) puis installer dépendances
+RUN pip install --upgrade pip
+COPY requirements-base.txt requirements-scraping.txt ./
+RUN pip install --no-cache-dir -r requirements-base.txt -r requirements-scraping.txt
+
+# Installer playwright (navigateur)
+RUN playwright install chromium --with-deps
+
+# Copier le code scraping + package src
+COPY src/scraping/ ./src/scraping/
+COPY src/__init__.py ./src/
+COPY config/ ./config/
+
+# Créer répertoire de sortie + user non-root
+RUN mkdir -p /app/data/raw && \
+    useradd --create-home --shell /bin/bash scraper && \
+    chown -R scraper:scraper /app
+
+USER scraper
+
+CMD ["dumb-init", "--", "python", "-m", "src.scraping.main"]
+
+# ============================================
+# Stage 4: ML Training (torch, xgboost, lightgbm - le plus lourd)
+# ============================================
+FROM base as ml-training
+
+WORKDIR /app
+
+# Installer torch séparément (le plus gros)
+RUN pip install --no-cache-dir torch==2.1.0 -i https://download.pytorch.org/whl/cpu
+
+# Installer le reste des dépendances ML
+COPY requirements-ml.txt .
+RUN pip install --no-cache-dir -r requirements-ml.txt
+
+# Copier sources ML uniquement
+COPY src/data_analysis/ ./src/data_analysis/
+COPY config/ ./config/
+COPY data/ ./data/
+
 RUN mkdir -p /app/data/models
 
-# Default command for training
 CMD ["python", "-m", "src.data_analysis.train"]
 
 # ============================================
-# Stage 6: MCP Server
+# Stage 5: MCP Server (API + scraping léger + LLM)
 # ============================================
 FROM base as mcp-server
 
 WORKDIR /app
 
-# Copy requirements and install
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Installer dépendances spécifiques MCP/LLM
+COPY requirements-llm.txt .
+RUN pip install --no-cache-dir -r requirements-llm.txt
 
-# Copy MCP code
+# Scraping léger (pour les endpoints MCP)
+RUN pip install --no-cache-dir beautifulsoup4>=4.12.0 lxml>=4.9.0
+
+# Copier les sources nécessaires
 COPY src/mcp/ ./src/mcp/
+COPY src/llm/ ./src/llm/
+COPY src/scraping/ ./src/scraping/
 COPY config/ ./config/
 
-# Create non-root user for MCP server
+# User non-root
 RUN groupadd -r mcpuser && \
     useradd --create-home --shell /bin/bash --gid mcpuser mcpuser && \
     chown -R mcpuser:mcpuser /app
 
-# Switch to non-root user
 USER mcpuser
 
-# Expose MCP port
 EXPOSE 8000
 
-# Default command for MCP server
 CMD ["python", "-m", "uvicorn", "src.mcp.server:app", "--host", "0.0.0.0", "--port", "8000"]
 
+# ============================================
+# Stage 6: Jupyter (développement - tout compris)
+# ============================================
+FROM base as jupyter
+
+WORKDIR /app
+
+# Installer les dépendances de tous les modules
+COPY requirements-scraping.txt requirements-ml.txt requirements-dashboard.txt requirements-llm.txt ./
+RUN pip install --no-cache-dir -r requirements-scraping.txt \
+    -r requirements-ml.txt \
+    -r requirements-dashboard.txt \
+    -r requirements-llm.txt
+
+# Jupyter + outils dev
+RUN pip install --no-cache-dir jupyter jupyterlab ipykernel ipywidgets nbconvert debugpy kfp==2.0.0 apscheduler prometheus-client
+
+# Torch (CPU)
+RUN pip install --no-cache-dir torch==2.1.0 -i https://download.pytorch.org/whl/cpu
+
+# Copier tout le code source
+COPY . .
+
+EXPOSE 8888
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8888')" || exit 1
+
+CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root"]
 
 # ============================================
-# Stage 7: Agent Orchestrator (NEW)
+# Stage 7: KFP Components (ML + scraping léger)
 # ============================================
-FROM base as agent-orchestrator
+FROM ml-training as kfp-components
 
-# Install orchestration & monitoring dependencies
-RUN pip install --no-cache-dir \
-    apscheduler \
-    prometheus-client
+WORKDIR /app
 
-# Copy source code for agents, scheduler, monitoring
-COPY src/scraping/agents/ ./src/scraping/agents/
-COPY src/scraping/main.py ./src/scraping/main.py
-COPY src/scheduler/ ./src/scheduler/
-COPY src/monitoring/ ./src/monitoring/
-COPY src/__main__.py ./src/__main__.py
-COPY config/ ./config/
-COPY data/ ./data/
+# Ajouter outils KFP
+RUN pip install --no-cache-dir kfp==2.0.0 apscheduler prometheus-client
 
-# Create non-root user
-RUN useradd --create-home --shell /bin/bash agentuser && \
-    chown -R agentuser:agentuser /app
+# Copier tout le code source
+COPY . .
 
-USER agentuser
+# User non-root
+RUN useradd --create-home --shell /bin/bash appuser && \
+    chown -R appuser:appuser /app
 
-# Default: launch agent cluster
+USER appuser
+
+# ============================================
+# Stage 8: Agent Orchestrator (basé sur kfp-components)
+# ============================================
+FROM kfp-components as agent-orchestrator
+
 CMD ["python", "-m", "src.scraping.agents.main"]

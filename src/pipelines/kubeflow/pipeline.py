@@ -19,12 +19,10 @@ from pathlib import Path
 
 
 # ============================================
-# Component 1: Scraping (already exists as function)
-# We'll wrap it as KFP component
+# Component 1: Scraping
 # ============================================
 @component(
-    base_image="python:3.11-slim",
-    packages_to_install=["asyncpg", "aiohttp", "selenium", "playwright", "scrapy", "beautifulsoup4", "psycopg2-binary", "pyyaml"],
+    base_image="ecommerce-kfp:latest",
 )
 def scrape_products_kfp(
     config_path: str,
@@ -111,11 +109,10 @@ def scrape_products_kfp(
 
 
 # ============================================
-# Component 2: Preprocessing (already exists)
+# Component 2: Preprocessing
 # ============================================
 @component(
-    base_image="python:3.11-slim",
-    packages_to_install=["pandas", "numpy", "scikit-learn", "pyyaml"],
+    base_image="ecommerce-kfp:latest",
 )
 def preprocess_data_kfp(
     input_data: Input[Dataset],
@@ -246,11 +243,10 @@ def preprocess_data_kfp(
 
 
 # ============================================
-# Component 3: Training (NEW - was missing!)
+# Component 3: Training
 # ============================================
 @component(
-    base_image="python:3.11-slim",
-    packages_to_install=["pandas", "numpy", "scikit-learn", "xgboost", "lightgbm", "mlxtend", "joblib"],
+    base_image="ecommerce-kfp:latest",
 )
 def train_models_kfp(
     preprocessed_data: Input[Dataset],
@@ -497,11 +493,10 @@ def train_models_kfp(
 
 
 # ============================================
-# Component 4: Top-K Selection (already in __main__)
+# Component 4: Top-K Selection
 # ============================================
 @component(
-    base_image="python:3.11-slim",
-    packages_to_install=["pandas", "numpy"],
+    base_image="ecommerce-kfp:latest",
 )
 def select_top_k_kfp(
     preprocessed_data: Input[Dataset],
@@ -585,11 +580,10 @@ def select_top_k_kfp(
 
 
 # ============================================
-# Component 5: LLM Summary (NEW)
+# Component 5: LLM Summary
 # ============================================
 @component(
-    base_image="python:3.11-slim",
-    packages_to_install=["openai>=1.0.0", "anthropic", "httpx"],
+    base_image="ecommerce-kfp:latest",
 )
 def generate_llm_summary_kfp(
     scraped_data: Input[Dataset],
