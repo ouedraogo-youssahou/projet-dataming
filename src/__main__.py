@@ -71,18 +71,20 @@ class SmartECommerceIntelligence:
         self.classification = ClassificationEngine(config.get("data_analysis", {}).get("models", {}))
         self.association = AssociationEngine(config.get("data_analysis", {}).get("models", {}))
 
-        # LLM
+        # LLM (DeepSeek & Groq uniquement)
         llm_cfg = config.get("llm", {})
         self.llm = LLMWrapper(
-            openai_key=llm_cfg.get("openai", {}).get("api_key"),
-            anthropic_key=llm_cfg.get("anthropic", {}).get("api_key"),
             deepseek_key=llm_cfg.get("deepseek", {}).get("api_key"),
             groq_key=llm_cfg.get("groq", {}).get("api_key"),
             config=llm_cfg
         )
 
         # MCP Server
-        self.mcp_server = MCPServer(config.get("mcp", {}))
+        self.mcp_server = MCPServer(
+            mcp_config=config.get("mcp", {}),
+            scraping_config=config.get("scraping", {}),
+            llm_config=config.get("llm", {})
+        )
 
     async def scrape_all(self, targets: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Run all scrapers on given targets."""

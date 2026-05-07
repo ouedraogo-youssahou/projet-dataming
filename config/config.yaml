@@ -204,23 +204,9 @@ dashboard:
     interval_seconds: 300
 
 # ============================================
-# LLM Configuration
+# LLM Configuration (DeepSeek & Groq uniquement)
 # ============================================
 llm:
-  # OpenAI
-  openai:
-    model: "gpt-4"
-    temperature: 0.7
-    max_tokens: 2000
-    api_key: "${OPENAI_API_KEY}"
-
-  # Anthropic Claude
-  anthropic:
-    model: "claude-3-opus-20240229"
-    temperature: 0.7
-    max_tokens: 2000
-    api_key: "${ANTHROPIC_API_KEY}"
-
   # DeepSeek
   deepseek:
     model: "deepseek-chat"
@@ -234,13 +220,7 @@ llm:
     temperature: 0.7
     max_tokens: 2000
     api_key: "${GROQ_API_KEY}"
-  
-  # LangChain Settings
-  langchain:
-    chain_type: "stuff"  # stuff, map_reduce, refine
-    verbose: true
-    max_retries: 3
-  
+
   # Prompt Templates
   prompts:
     product_summary: "Summarize the following product: {product_description}"

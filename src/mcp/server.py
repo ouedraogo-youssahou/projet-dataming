@@ -15,21 +15,21 @@ logger = logging.getLogger(__name__)
 class MCPServer:
     """Model Context Protocol server exposing tools for LLM use."""
 
-    def __init__(self, config: Dict[str, Any]):
-        self.config = config
-        self.api_key = config.get("security", {}).get("api_key", "")
+    def __init__(self, mcp_config: Dict[str, Any], scraping_config: Optional[Dict[str, Any]] = None, llm_config: Optional[Dict[str, Any]] = None):
+        self.config = mcp_config
+        self.llm_config = llm_config or {}
+        self.scraping_config = scraping_config or {}
+        self.api_key = mcp_config.get("security", {}).get("api_key", "")
         self._app = FastAPI(
-            title=config.get("server", {}).get("name", "Ecommerce MCP Server"),
-            version=config.get("server", {}).get("version", "1.0.0"),
+            title=mcp_config.get("server", {}).get("name", "Ecommerce MCP Server"),
+            version=mcp_config.get("server", {}).get("version", "1.0.0"),
         )
         self.llm = LLMWrapper(
-            openai_key=config.get("llm_integration", {}).get("openai_key"),
-            anthropic_key=config.get("llm_integration", {}).get("anthropic_key"),
-            deepseek_key=config.get("llm_integration", {}).get("deepseek_key"),
-            groq_key=config.get("llm_integration", {}).get("groq_key"),
+            deepseek_key=self.llm_config.get("deepseek", {}).get("api_key"),
+            groq_key=self.llm_config.get("groq", {}).get("api_key"),
         )
-        self.shopify_scraper = ShopifyScraper(config.get("scraping", {}).get("shopify", {}))
-        self.woocommerce_scraper = WooCommerceScraper(config.get("scraping", {}).get("woocommerce", {}))
+        self.shopify_scraper = ShopifyScraper(self.scraping_config.get("shopify", {}))
+        self.woocommerce_scraper = WooCommerceScraper(self.scraping_config.get("woocommerce", {}))
         self._setup_routes()
 
     @property
