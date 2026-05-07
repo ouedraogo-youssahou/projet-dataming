@@ -7,4 +7,3 @@ lightgbm>=4.1.0
 scipy>=1.11.0
 mlxtend>=0.22.0
 optuna
-wandb

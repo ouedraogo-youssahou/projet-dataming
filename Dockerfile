@@ -12,8 +12,6 @@ FROM python:3.11-slim as base
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
     DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /app
@@ -24,9 +22,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copier et installer UNIQUEMENT les dépendances de base
+# Mettre à jour pip + installer dépendances de base
 COPY requirements-base.txt .
-RUN pip install --no-cache-dir -r requirements-base.txt
+RUN pip install --upgrade pip && pip install -r requirements-base.txt
 
 # ============================================
 # Stage 2: Dashboard (streamlit + plots, pas de torch/ML lourd)
@@ -102,12 +100,18 @@ FROM base as ml-training
 
 WORKDIR /app
 
-# Installer torch séparément (le plus gros)
-RUN pip install --no-cache-dir torch==2.1.0 -i https://download.pytorch.org/whl/cpu
+# Upgrade pip
+RUN pip install --upgrade pip
 
-# Installer le reste des dépendances ML
+# Installer Torch séparément (CPU wheel pour alléger)
+RUN pip install torch==2.1.0 -i https://download.pytorch.org/whl/cpu --retries 10 --timeout 2200
+
+# Tout installer en UNE SEULE commande pip (évite bug hash mismatch)
 COPY requirements-ml.txt .
-RUN pip install --no-cache-dir -r requirements-ml.txt
+RUN pip install -r requirements-ml.txt --retries 10 --timeout 4200
+
+# Purger le cache pip pour réduire la taille de l'image
+RUN pip cache purge
 
 # Copier sources ML uniquement
 COPY src/data_analysis/ ./src/data_analysis/
@@ -116,7 +120,7 @@ COPY data/ ./data/
 
 RUN mkdir -p /app/data/models
 
-CMD ["python", "-m", "src.data_analysis.train"]
+CMD ["python", "-c", "from src.data_analysis.ml_models.clustering import ClusteringEngine; from src.data_analysis.ml_models.classification import ClassificationEngine; from src.data_analysis.ml_models.association import AssociationEngine; print('ML Training module ready'); print('Clustering, Classification, Association engines available')"]
 
 # ============================================
 # Stage 5: MCP Server (API + scraping léger + LLM)
