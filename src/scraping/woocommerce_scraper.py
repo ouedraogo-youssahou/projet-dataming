@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class WooCommerceScraper(BaseScraper):
-    """WooCommerce REST API scraper."""
+    """WooCommerce REST API scraper with pagination support."""
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
@@ -17,43 +17,27 @@ class WooCommerceScraper(BaseScraper):
         self.api_version = self.config.get("api_version", "wc/v3")
 
     async def scrape(self, url: str, **kwargs) -> Dict[str, Any]:
-        """Scrape WooCommerce store or product page."""
+        """Scrape WooCommerce store or product page. Returns first product if product URL."""
         await self._throttle()
-
-        # If URL looks like a product page, try to extract id/handle
-        # WooCommerce API: /wp-json/wc/v3/products?slug=...
         import aiohttp
-
-        # Try to get base store URL
         base = self._get_base_url(url)
         if not base:
             return self.normalize_product({"title": url})
-
         api_url = f"{base}/wp-json/{self.api_version}/products"
-
-        # If path contains /product/ try slug
         slug = None
         if "/product/" in url:
             slug = url.split("/product/")[-1].split("?")[0].strip("/")
-
         params = {"per_page": 1}
         if slug:
             params["slug"] = slug
-
         auth = None
         if self.consumer_key and self.consumer_secret:
             auth = aiohttp.BasicAuth(self.consumer_key, self.consumer_secret)
-
         try:
             async with aiohttp.ClientSession(auth=auth) as session:
-                async with session.get(
-                    api_url,
-                    params=params,
-                    headers=self.headers,
-                    timeout=aiohttp.ClientTimeout(total=self.timeout),
-                ) as resp:
+                async with session.get(api_url, params=params, headers=self.headers,
+                                       timeout=aiohttp.ClientTimeout(total=self.timeout)) as resp:
                     data = await resp.json()
-
             if isinstance(data, list) and len(data) > 0:
                 product = data[0]
                 return self._parse_woo_product(product)
@@ -64,8 +48,68 @@ class WooCommerceScraper(BaseScraper):
                 return self.normalize_product({"title": slug or url})
         except Exception as e:
             logger.error(f"WooCommerce scrape error for {url}: {e}")
-            # Fallback basic
             return self.normalize_product({"title": slug or url, "price": 0})
+
+    async def scrape_all(self, url: str, max_pages: int = 50) -> list:
+        """
+        Crawl ALL products from a WooCommerce store via REST API.
+        Utilise Basic Auth (mathematics:succinct) pour le serveur + clés API WooCommerce.
+        Pagination automatique pour récupérer tous les produits.
+        """
+        import aiohttp
+        import os
+        import base64
+
+        base = self._get_base_url(url)
+        if not base:
+            return []
+
+        login_user = os.getenv("WOOCOMMERCE_USERNAME", "mathematics")
+        login_pass = os.getenv("WOOCOMMERCE_PASSWORD", "succinct")
+        basic_token = base64.b64encode(f"{login_user}:{login_pass}".encode()).decode()
+        basic_headers = {"Authorization": f"Basic {basic_token}"}
+
+        all_products = []
+        page = 1
+        per_page = 100
+
+        api_url = f"{base}/wp-json/{self.api_version}/products"
+        logger.info(f"Starting API crawl: {api_url}")
+
+        async with aiohttp.ClientSession(headers=basic_headers) as session:
+            while page <= max_pages:
+                # Ajouter les clés API WooCommerce en paramètres URL
+                params = {
+                    "per_page": per_page,
+                    "page": page,
+                    "consumer_key": self.consumer_key,
+                    "consumer_secret": self.consumer_secret,
+                }
+                try:
+                    async with session.get(
+                        api_url, params=params,
+                        timeout=aiohttp.ClientTimeout(total=30),
+                    ) as resp:
+                        if resp.status != 200:
+                            logger.warning(f"API returned {resp.status} at page {page}")
+                            break
+                        data = await resp.json()
+                except Exception as e:
+                    logger.error(f"Error fetching page {page}: {e}")
+                    break
+
+                if not isinstance(data, list) or len(data) == 0:
+                    break
+
+                for product in data:
+                    all_products.append(self._parse_woo_product(product))
+
+                logger.info(f"Page {page}: {len(data)} products (total: {len(all_products)})")
+                page += 1
+                await self._throttle()
+
+        logger.info(f"API crawl complete: {len(all_products)} products from {page-1} pages")
+        return all_products
 
     async def _scrape_html_fallback(self, url: str) -> Dict[str, Any]:
         """HTML fallback for sites without API access."""

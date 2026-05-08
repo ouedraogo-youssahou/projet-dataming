@@ -1,32 +1,57 @@
 """Smart eCommerce Intelligence - Main Package."""
+# Tous les imports sont conditionnels pour fonctionner même dans des images sans ML
 
-# Scraping
-from src.scraping.shopify_scraper import ShopifyScraper
-from src.scraping.woocommerce_scraper import WooCommerceScraper
-from src.scraping.storage import PostgreSQLStorage
+# Scraping (toujours disponible)
+try:
+    from src.scraping.shopify_scraper import ShopifyScraper
+except ImportError:
+    ShopifyScraper = None
 
-# ML Engines
-from src.data_analysis.ml_models.clustering import ClusteringEngine
-from src.data_analysis.ml_models.classification import ClassificationEngine
-from src.data_analysis.ml_models.association import AssociationEngine
+try:
+    from src.scraping.woocommerce_scraper import WooCommerceScraper
+except ImportError:
+    WooCommerceScraper = None
+
+try:
+    from src.scraping.storage import PostgreSQLStorage
+except ImportError:
+    PostgreSQLStorage = None
+
+# ML Engines (disponible seulement dans ml-training)
+try:
+    from src.data_analysis.ml_models.clustering import ClusteringEngine
+except ImportError:
+    ClusteringEngine = None
+
+try:
+    from src.data_analysis.ml_models.classification import ClassificationEngine
+except ImportError:
+    ClassificationEngine = None
+
+try:
+    from src.data_analysis.ml_models.association import AssociationEngine
+except ImportError:
+    AssociationEngine = None
 
 # LLM
-from src.llm.wrapper import LLMWrapper
+try:
+    from src.llm.wrapper import LLMWrapper
+except ImportError:
+    LLMWrapper = None
 
 # MCP Server
-from src.mcp.server import MCPServer
+try:
+    from src.mcp.server import MCPServer
+except ImportError:
+    MCPServer = None
 
 __all__ = [
-    # Scraping
     "ShopifyScraper",
     "WooCommerceScraper",
     "PostgreSQLStorage",
-    # ML
     "ClusteringEngine",
     "ClassificationEngine",
     "AssociationEngine",
-    # LLM
     "LLMWrapper",
-    # MCP
     "MCPServer",
 ]

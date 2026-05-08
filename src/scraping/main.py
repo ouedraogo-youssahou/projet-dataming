@@ -46,13 +46,15 @@ async def main():
     # Lancer l'orchestrateur
     await orchestrator.start()
 
-    # Définir quelques cibles par défaut (ou lire depuis config/env)
-    targets = [
-        {"platform": "shopify", "url": "https://storefront-demo.myshopify.com"},
-    ]
-    env_targets = config.get("scraping", {}).get("default_targets", [])
-    if env_targets:
-        targets = env_targets
+    # Définir les cibles : WooCommerce store depuis .env (shopify désactivé pour l'instant)
+    import os
+    woo_url = os.getenv("WOOCOMMERCE_STORE_URL", "")
+    targets = []
+    if woo_url:
+        targets.append({"platform": "woocommerce", "url": woo_url})
+    else:
+        # Fallback si pas d'URL configurée
+        targets = [{"platform": "woocommerce", "url": "https://majestic-cheese.localsite.io"}]
 
     logger.info(f"Scraper démarré avec {len(agents)} agents et {len(targets)} cibles")
 

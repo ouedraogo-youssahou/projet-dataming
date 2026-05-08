@@ -127,32 +127,43 @@ class WooCommerceAgent(BaseAgent):
             registry=registry,
         )
         self.config = config or {}
-        self.scraper = WooCommerceScraper(self.config.get("woocommerce", {}))
+        # Injecter les credentials WooCommerce depuis les variables d'environnement
+        import os
+        woo_cfg = dict(self.config.get("woocommerce", {}))
+        env_key = os.getenv("WOOCOMMERCE_CONSUMER_KEY", "")
+        env_secret = os.getenv("WOOCOMMERCE_CONSUMER_SECRET", "")
+        if env_key:
+            woo_cfg["consumer_key"] = env_key
+        if env_secret:
+            woo_cfg["consumer_secret"] = env_secret
+        self.scraper = WooCommerceScraper(woo_cfg)
         self.metadata["platform"] = "WooCommerce"
 
     async def scrape(self, task: Task) -> Any:
         """
-        Scrape a WooCommerce URL using the WooCommerce scraper.
-        
-        Args:
-            task: Task with url to scrape
-            
-        Returns:
-            Dict of normalized product data
+        Scrape a WooCommerce store or product page.
+        If URL is a store root (no /product/ in path), crawls ALL products.
         """
         url = task.url
         params = task.params
 
         logger.info(f"WooCommerceAgent scraping: {url}")
 
-        # Apply rate limiting
         await self._throttle()
 
-        # Scrape using the existing WooCommerce scraper
-        result = await self.scraper.scrape(url, **params)
+        # Détection : si c'est un store (pas une page produit), crawler tous les produits
+        if "/product/" not in url:
+            result = await self.scraper.scrape_all(url, max_pages=params.get("max_pages", 50))
+        else:
+            result = await self.scraper.scrape(url, **params)
 
-        # Add metadata
-        if isinstance(result, dict):
+        # Ajouter métadonnées
+        if isinstance(result, list):
+            for item in result:
+                if isinstance(item, dict):
+                    item["_scraped_by"] = self.agent_id
+                    item["_platform"] = "woocommerce"
+        elif isinstance(result, dict):
             result["_scraped_by"] = self.agent_id
             result["_platform"] = "woocommerce"
 
