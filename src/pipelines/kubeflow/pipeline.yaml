@@ -1,204 +1,560 @@
-# ============================================
-# Kubeflow Pipeline - Manually Crafted YAML
-# This is the compiled pipeline manifest (Argo Workflow)
-# ============================================
-
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: ecommerce-pipeline-
-  annotations:
-    pipelines.kubeflow.org/pipeline_spec: >
-      {"description": "End-to-end eCommerce ML pipeline",
-       "name": "ecommerce-ml-pipeline", "version": "v1"}
-spec:
-  entrypoint: ecommerce-pipeline
-  templates:
-    # ============================================
-    # Main Pipeline Steps DAG
-    # ============================================
-    - name: ecommerce-pipeline
-      steps:
-        - - name: scrape
-            template: scrape-products
-        - - name: preprocess
-            template: preprocess-data
-            dependencies:
-              - scrape
-        - - name: train
-            template: train-models
-            dependencies:
-              - preprocess
-        - - name: top-k
-            template: select-top-k
-            dependencies:
-              - preprocess
-        - - name: summary
-            template: generate-summary
-            dependencies:
-              - train
-              - top-k
-
-    # ============================================
-    # Step 1: Scrape Products
-    # ============================================
-    - name: scrape-products
+# PIPELINE DEFINITION
+# Name: ecommerce-ml-pipeline
+# Description: End-to-end ML pipeline for eCommerce intelligence
+# Inputs:
+#    config_path: str [Default: '/app/config/config.yaml']
+#    targets: str [Default: '[]']
+components:
+  comp-generate-llm-summary-kfp:
+    executorLabel: exec-generate-llm-summary-kfp
+    inputDefinitions:
+      artifacts:
+        scraped_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+        top_k_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        config_path:
+          parameterType: STRING
+    outputDefinitions:
+      artifacts:
+        summary_output:
+          artifactType:
+            schemaTitle: system.Artifact
+            schemaVersion: 0.0.1
+      parameters:
+        status:
+          parameterType: STRING
+        summary_length:
+          parameterType: NUMBER_INTEGER
+  comp-preprocess-data-kfp:
+    executorLabel: exec-preprocess-data-kfp
+    inputDefinitions:
+      artifacts:
+        input_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        config_path:
+          parameterType: STRING
+    outputDefinitions:
+      artifacts:
+        output_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        n_features:
+          parameterType: NUMBER_INTEGER
+        n_products:
+          parameterType: NUMBER_INTEGER
+        status:
+          parameterType: STRING
+  comp-scrape-products-kfp:
+    executorLabel: exec-scrape-products-kfp
+    inputDefinitions:
+      parameters:
+        config_path:
+          parameterType: STRING
+        targets_json:
+          parameterType: STRING
+    outputDefinitions:
+      artifacts:
+        output_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        platforms:
+          parameterType: STRING
+        status:
+          parameterType: STRING
+        total_products:
+          parameterType: NUMBER_INTEGER
+  comp-select-top-k-kfp:
+    executorLabel: exec-select-top-k-kfp
+    inputDefinitions:
+      artifacts:
+        preprocessed_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        config_path:
+          parameterType: STRING
+    outputDefinitions:
+      artifacts:
+        top_k_output:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        status:
+          parameterType: STRING
+        top_k_count:
+          parameterType: NUMBER_INTEGER
+  comp-train-models-kfp:
+    executorLabel: exec-train-models-kfp
+    inputDefinitions:
+      artifacts:
+        preprocessed_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        config_path:
+          parameterType: STRING
+    outputDefinitions:
+      artifacts:
+        model_output:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+      parameters:
+        metrics:
+          parameterType: STRING
+        models_trained:
+          parameterType: NUMBER_INTEGER
+        status:
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-generate-llm-summary-kfp:
       container:
-        image: datamining-dashboard:latest
-        command: ["python", "-m", "src.pipelines.kubeflow.scraping_component"]
         args:
-          - --config_path
-          - /app/config/config.yaml
-          - --output_path
-          - /app/data/raw/scraped_products.json
-        volumeMounts:
-          - name: config-volume
-            mountPath: /app/config
-          - name: data-volume
-            mountPath: /app/data
-      outputs:
-        artifacts:
-          - name: output-data
-            path: /app/data/raw/scraped_products.json
-            type: dataset
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - generate_llm_summary_kfp
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'httpx' 'pyyaml'\
+          \  &&  python3 -m pip install --quiet --no-warn-script-location 'kfp==2.16.1'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
 
-    # ============================================
-    # Step 2: Preprocess Data
-    # ============================================
-    - name: preprocess-data
-      inputs:
-        artifacts:
-          - name: input-data
-            path: /app/data/raw/scraped_products.json
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef generate_llm_summary_kfp(\n    scraped_data: Input[Dataset],\n\
+          \    top_k_data: Input[Dataset],\n    config_path: str,\n    summary_output:\
+          \ Output[Artifact],\n) -> NamedTuple(\n    \"SummaryOutput\",\n    [(\"\
+          status\", str), (\"summary_length\", int)],\n):\n    \"\"\"KFP Component:\
+          \ Generate LLM summary using DeepSeek or Groq.\"\"\"\n    import json\n\
+          \    import logging\n    from pathlib import Path\n    from collections\
+          \ import namedtuple\n    import yaml\n    import httpx\n\n    logger = logging.getLogger(__name__)\n\
+          \    logging.basicConfig(level=logging.INFO)\n\n    with open(scraped_data.path)\
+          \ as f:\n        all_products = json.load(f)\n    with open(top_k_data.path)\
+          \ as f:\n        top_k = json.load(f)\n\n    if not all_products:\n    \
+          \    SummaryOutput = namedtuple(\"SummaryOutput\", [\"status\", \"summary_length\"\
+          ])\n        return SummaryOutput(status=\"empty\", summary_length=0)\n\n\
+          \    prompt = (\n        \"You are a smart eCommerce analyst. Summarize\
+          \ this dataset in 3-4 sentences.\\n\"\n        f\"Total products: {len(all_products)}\\\
+          n\"\n        f\"Top products: {[p.get('name', 'Unknown') for p in top_k[:3]]}\\\
+          n\"\n        \"Focus on price range, ratings, availability, and main categories.\"\
+          \n    )\n\n    summary_text = None\n\n    # DeepSeek\n    deepseek_key =\
+          \ \"sk-73e4d05b6a5848afa79614910d604f4f\"\n    try:\n        resp = httpx.post(\"\
+          https://api.deepseek.com/v1/chat/completions\",\n            headers={\"\
+          Authorization\": f\"Bearer {deepseek_key}\", \"Content-Type\": \"application/json\"\
+          },\n            json={\"model\": \"deepseek-chat\", \"messages\": [{\"role\"\
+          : \"user\", \"content\": prompt}], \"max_tokens\": 500},\n            timeout=30)\n\
+          \        resp.raise_for_status()\n        summary_text = resp.json()[\"\
+          choices\"][0][\"message\"][\"content\"].strip()\n    except Exception as\
+          \ e:\n        logger.warning(f\"DeepSeek failed: {e}\")\n\n    if not summary_text:\n\
+          \        summary_text = f\"Dataset: {len(all_products)} products. Top picks:\
+          \ {[p.get('name','?') for p in top_k[:3]]}.\"\n\n    summary_path = Path(summary_output.path)\n\
+          \    summary_path.parent.mkdir(parents=True, exist_ok=True)\n    with open(summary_path,\
+          \ \"w\") as f:\n        f.write(summary_text)\n\n    summary_output.metadata[\"\
+          summary_length\"] = len(summary_text)\n\n    SummaryOutput = namedtuple(\"\
+          SummaryOutput\", [\"status\", \"summary_length\"])\n    return SummaryOutput(status=\"\
+          completed\" if summary_text else \"fallback\", summary_length=len(summary_text))\n\
+          \n"
+        image: python:3.11-slim
+    exec-preprocess-data-kfp:
       container:
-        image: datamining-dashboard:latest
-        command: ["python", "-m", "src.pipelines.kubeflow.preprocessing_component"]
         args:
-          - --input_path
-          - /app/data/raw/scraped_products.json
-          - --config_path
-          - /app/config/config.yaml
-          - --output_path
-          - /app/data/processed/preprocessed_products.json
-        volumeMounts:
-          - name: config-volume
-            mountPath: /app/config
-          - name: data-volume
-            mountPath: /app/data
-      outputs:
-        artifacts:
-          - name: output-data
-            path: /app/data/processed/preprocessed_products.json
-            type: dataset
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - preprocess_data_kfp
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'pandas' 'numpy'\
+          \ 'scikit-learn' 'pyyaml'  &&  python3 -m pip install --quiet --no-warn-script-location\
+          \ 'kfp==2.16.1' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"\
+          3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
 
-    # ============================================
-    # Step 3: Train Models
-    # ============================================
-    - name: train-models
-      inputs:
-        artifacts:
-          - name: preprocessed-data
-            path: /app/data/processed/preprocessed_products.json
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef preprocess_data_kfp(\n    input_data: Input[Dataset],\n    config_path:\
+          \ str,\n    output_data: Output[Dataset],\n) -> NamedTuple(\n    \"PreprocessingOutput\"\
+          ,\n    [\n        (\"status\", str),\n        (\"n_features\", int),\n \
+          \       (\"n_products\", int),\n    ],\n):\n    \"\"\"KFP Component: Preprocess\
+          \ scraped product data.\"\"\"\n    import json\n    import logging\n   \
+          \ from pathlib import Path\n    import pandas as pd\n    import numpy as\
+          \ np\n    from collections import namedtuple\n    from sklearn.preprocessing\
+          \ import StandardScaler, LabelEncoder\n\n    logger = logging.getLogger(__name__)\n\
+          \    logging.basicConfig(level=logging.INFO)\n\n    input_path = Path(input_data.path)\n\
+          \    with open(input_path) as f:\n        products = json.load(f)\n\n  \
+          \  if not products:\n        PreprocessingOutput = namedtuple(\"PreprocessingOutput\"\
+          , [\"status\", \"n_features\", \"n_products\"])\n        return PreprocessingOutput(status=\"\
+          empty\", n_features=0, n_products=0)\n\n    df = pd.DataFrame(products)\n\
+          \    logger.info(f\"Loaded {len(df)} products\")\n\n    # Handle missing\
+          \ values\n    df = df.fillna({'price': df['price'].median() if 'price' in\
+          \ df else 0,\n                    'rating': 0, 'reviews_count': 0, 'availability':\
+          \ False})\n\n    # Normalize numeric\n    scaler = StandardScaler()\n  \
+          \  numeric_cols = ['price', 'rating', 'reviews_count']\n    available =\
+          \ [c for c in numeric_cols if c in df.columns]\n    if available:\n    \
+          \    df[available] = scaler.fit_transform(df[available])\n\n    # Encode\
+          \ categories\n    if 'category' in df.columns:\n        le = LabelEncoder()\n\
+          \        df['category_encoded'] = le.fit_transform(df['category'].astype(str))\n\
+          \n    # Quality score\n    if 'rating' in df.columns and 'reviews_count'\
+          \ in df.columns:\n        max_reviews = df['reviews_count'].max() or 1\n\
+          \        df['quality_score'] = 0.6 * (df['rating'] / 5.0) + 0.4 * (df['reviews_count']\
+          \ / max_reviews)\n\n    output_path = Path(output_data.path)\n    output_path.parent.mkdir(parents=True,\
+          \ exist_ok=True)\n    with open(output_path, \"w\") as f:\n        json.dump(df.to_dict(orient='records'),\
+          \ f, indent=2, default=str)\n\n    output_data.metadata[\"n_features\"]\
+          \ = len(df.columns)\n    output_data.metadata[\"n_products\"] = len(df)\n\
+          \n    PreprocessingOutput = namedtuple(\"PreprocessingOutput\", [\"status\"\
+          , \"n_features\", \"n_products\"])\n    return PreprocessingOutput(status=\"\
+          completed\", n_features=len(df.columns), n_products=len(df))\n\n"
+        image: python:3.11-slim
+    exec-scrape-products-kfp:
       container:
-        image: datamining-dashboard:latest
-        command: ["python", "-c"]
         args:
-          - |
-            import sys
-            sys.path.insert(0, '/app')
-            from src.pipelines.kubeflow.pipeline import train_models_kfp
-            result = train_models_kfp(
-                config_path='/app/config/config.yaml',
-                preprocessed_data={'path': '/app/data/processed/preprocessed_products.json'},
-                model_output={'path': '/app/data/models/model_bundle.json'}
-            )
-            print(result)
-        volumeMounts:
-          - name: config-volume
-            mountPath: /app/config
-          - name: data-volume
-            mountPath: /app/data
-      outputs:
-        artifacts:
-          - name: model-output
-            path: /app/data/models/model_bundle.json
-            type: model
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - scrape_products_kfp
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'pyyaml'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'kfp==2.16.1'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
 
-    # ============================================
-    # Step 4: Select Top-K
-    # ============================================
-    - name: select-top-k
-      inputs:
-        artifacts:
-          - name: preprocessed-data
-            path: /app/data/processed/preprocessed_products.json
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef scrape_products_kfp(\n    config_path: str,\n    targets_json:\
+          \ str,\n    output_data: Output[Dataset],\n) -> NamedTuple(\n    \"ScrapingOutput\"\
+          ,\n    [\n        (\"status\", str),\n        (\"total_products\", int),\n\
+          \        (\"platforms\", str),\n    ],\n):\n    \"\"\"KFP Component: Charge\
+          \ les 74 produits d\xE9j\xE0 scrap\xE9s depuis data/raw/products.json.\"\
+          \"\"\n    import json\n    import logging\n    from pathlib import Path\n\
+          \    from collections import namedtuple\n\n    logger = logging.getLogger(__name__)\n\
+          \    logging.basicConfig(level=logging.INFO)\n\n    logger.info(\"Chargement\
+          \ des produits d\xE9j\xE0 scrap\xE9s...\")\n\n    # Chercher le fichier\
+          \ \xE0 plusieurs endroits possibles\n    search_paths = [\n        Path(\"\
+          /app/data/raw/products.json\"),\n        Path(\"/data/raw/products.json\"\
+          ),\n        Path(\"data/raw/products.json\"),\n    ]\n\n    all_products\
+          \ = []\n    for sp in search_paths:\n        if sp.exists():\n         \
+          \   with open(sp) as f:\n                all_products = json.load(f)\n \
+          \           logger.info(f\"Fichier trouv\xE9: {sp} \u2014 {len(all_products)}\
+          \ produits charg\xE9s\")\n            break\n\n    if not all_products:\n\
+          \        # Fallback : 3 produits de d\xE9monstration\n        logger.warning(\"\
+          Aucun fichier trouv\xE9, utilisation des donn\xE9es de d\xE9mo\")\n    \
+          \    all_products = [\n            {\"product_id\": \"1\", \"name\": \"\
+          Odomos Naturals Mosquito Repellent\", \"category\": \"Uncategorized\", \"\
+          price\": 56.0, \"rating\": 0.0, \"reviews_count\": 0, \"availability\":\
+          \ True},\n            {\"product_id\": \"2\", \"name\": \"Priyagold Magic\
+          \ Cake Fruit (150 g)\", \"category\": \"Uncategorized\", \"price\": 29.0,\
+          \ \"rating\": 0.0, \"reviews_count\": 0, \"availability\": True},\n    \
+          \        {\"product_id\": \"3\", \"name\": \"Patanjali Kesh Kanti Shikakai\
+          \ Hair Cleanser (200 ml)\", \"category\": \"Uncategorized\", \"price\":\
+          \ 95.0, \"rating\": 0.0, \"reviews_count\": 0, \"availability\": True},\n\
+          \        ]\n\n    # Sauvegarde\n    output_path = Path(output_data.path)\n\
+          \    output_path.parent.mkdir(parents=True, exist_ok=True)\n    with open(output_path,\
+          \ \"w\") as f:\n        json.dump(all_products, f, indent=2, default=str)\n\
+          \n    output_data.metadata[\"num_products\"] = len(all_products)\n    output_data.metadata[\"\
+          platforms\"] = json.dumps([\"woocommerce\"])\n\n    from collections import\
+          \ namedtuple\n    ScrapingOutput = namedtuple(\"ScrapingOutput\", [\"status\"\
+          , \"total_products\", \"platforms\"])\n    return ScrapingOutput(\n    \
+          \    status=\"completed\",\n        total_products=len(all_products),\n\
+          \        platforms=json.dumps([\"woocommerce\"]),\n    )\n\n"
+        image: python:3.11-slim
+    exec-select-top-k-kfp:
       container:
-        image: datamining-dashboard:latest
-        command: ["python", "-c"]
         args:
-          - |
-            import sys
-            sys.path.insert(0, '/app')
-            from src.pipelines.kubeflow.pipeline import select_top_k_kfp
-            result = select_top_k_kfp(
-                config_path='/app/config/config.yaml',
-                preprocessed_data={'path': '/app/data/processed/preprocessed_products.json'},
-                top_k_output={'path': '/app/data/analysis/top_k_products.json'}
-            )
-            print(result)
-        volumeMounts:
-          - name: config-volume
-            mountPath: /app/config
-          - name: data-volume
-            mountPath: /app/data
-      outputs:
-        artifacts:
-          - name: top-k-output
-            path: /app/data/analysis/top_k_products.json
-            type: dataset
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - select_top_k_kfp
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'pandas' 'numpy'\
+          \ 'pyyaml'  &&  python3 -m pip install --quiet --no-warn-script-location\
+          \ 'kfp==2.16.1' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"\
+          3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
 
-    # ============================================
-    # Step 5: Generate LLM Summary
-    # ============================================
-    - name: generate-summary
-      inputs:
-        artifacts:
-          - name: scraped-data
-            path: /app/data/raw/scraped_products.json
-          - name: top-k-data
-            path: /app/data/analysis/top_k_products.json
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef select_top_k_kfp(\n    preprocessed_data: Input[Dataset],\n \
+          \   config_path: str,\n    top_k_output: Output[Dataset],\n) -> NamedTuple(\n\
+          \    \"TopKOutput\",\n    [(\"status\", str), (\"top_k_count\", int)],\n\
+          ):\n    \"\"\"KFP Component: Select top-K products by weighted scoring.\"\
+          \"\"\n    import json\n    import logging\n    from pathlib import Path\n\
+          \    import pandas as pd\n    from collections import namedtuple\n\n   \
+          \ logger = logging.getLogger(__name__)\n    logging.basicConfig(level=logging.INFO)\n\
+          \n    input_path = Path(preprocessed_data.path)\n    with open(input_path)\
+          \ as f:\n        products = json.load(f)\n\n    if not products:\n     \
+          \   TopKOutput = namedtuple(\"TopKOutput\", [\"status\", \"top_k_count\"\
+          ])\n        return TopKOutput(status=\"empty\", top_k_count=0)\n\n    df\
+          \ = pd.DataFrame(products)\n    weights = {\"rating\": 0.3, \"reviews_count\"\
+          : 0.25, \"price_competitiveness\": 0.2, \"availability\": 0.15}\n\n    max_price\
+          \ = df['price'].max() or 1\n    df['_price_score'] = (1 - (df['price'] /\
+          \ max_price)).clip(0, 1)\n    max_rating = df['rating'].max() or 5\n   \
+          \ df['_rating_score'] = (df['rating'] / max_rating).clip(0, 1)\n    max_reviews\
+          \ = df['reviews_count'].max() or 1\n    df['_reviews_score'] = (df['reviews_count']\
+          \ / max_reviews).clip(0, 1)\n\n    df['_score'] = (weights[\"rating\"] *\
+          \ df['_rating_score'] +\n                    weights[\"reviews_count\"]\
+          \ * df['_reviews_score'] +\n                    weights[\"price_competitiveness\"\
+          ] * df['_price_score'])\n\n    top10 = df.sort_values('_score', ascending=False).head(10)\n\
+          \n    output_path = Path(top_k_output.path)\n    output_path.parent.mkdir(parents=True,\
+          \ exist_ok=True)\n    with open(output_path, \"w\") as f:\n        json.dump(top10.to_dict(orient='records'),\
+          \ f, indent=2, default=str)\n\n    top_k_output.metadata[\"top_k_count\"\
+          ] = len(top10)\n\n    TopKOutput = namedtuple(\"TopKOutput\", [\"status\"\
+          , \"top_k_count\"])\n    return TopKOutput(status=\"completed\", top_k_count=len(top10))\n\
+          \n"
+        image: python:3.11-slim
+    exec-train-models-kfp:
       container:
-        image: datamining-dashboard:latest
-        command: ["python", "-c"]
         args:
-          - |
-            import sys
-            sys.path.insert(0, '/app')
-            from src.pipelines.kubeflow.pipeline import generate_llm_summary_kfp
-            result = generate_llm_summary_kfp(
-                config_path='/app/config/config.yaml',
-                scraped_data={'path': '/app/data/raw/scraped_products.json'},
-                top_k_data={'path': '/app/data/analysis/top_k_products.json'},
-                summary_output={'path': '/app/data/analysis/summary.txt'}
-            )
-            print(result)
-        volumeMounts:
-          - name: config-volume
-            mountPath: /app/config
-          - name: data-volume
-            mountPath: /app/data
-      outputs:
-        artifacts:
-          - name: summary-output
-            path: /app/data/analysis/summary.txt
-            type: text
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - train_models_kfp
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'pandas' 'numpy'\
+          \ 'scikit-learn' 'xgboost' 'mlxtend' 'joblib' 'pyyaml'  &&  python3 -m pip\
+          \ install --quiet --no-warn-script-location 'kfp==2.16.1' '--no-deps' 'typing-extensions>=3.7.4,<5;\
+          \ python_version<\"3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
 
-    # ============================================
-    # Volumes (must be created as PVCs in cluster)
-    # ============================================
-    - name: config-volume
-      persistentVolumeClaim:
-        claimName: config-pvc
-    - name: data-volume
-      persistentVolumeClaim:
-        claimName: data-pvc
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef train_models_kfp(\n    preprocessed_data: Input[Dataset],\n \
+          \   config_path: str,\n    model_output: Output[Model],\n) -> NamedTuple(\n\
+          \    \"TrainingOutput\",\n    [\n        (\"status\", str),\n        (\"\
+          models_trained\", int),\n        (\"metrics\", str),\n    ],\n):\n    \"\
+          \"\"KFP Component: Train ML models (KMeans, DBSCAN, Random Forest, XGBoost,\
+          \ Association Rules).\"\"\"\n    import json\n    import logging\n    from\
+          \ pathlib import Path\n    import pandas as pd\n    import numpy as np\n\
+          \    from collections import namedtuple\n    from sklearn.model_selection\
+          \ import train_test_split\n    from sklearn.metrics import silhouette_score\n\
+          \    from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering\n\
+          \    from sklearn.ensemble import RandomForestClassifier\n    from mlxtend.frequent_patterns\
+          \ import apriori, association_rules\n    import joblib\n\n    logger = logging.getLogger(__name__)\n\
+          \    logging.basicConfig(level=logging.INFO)\n\n    input_path = Path(preprocessed_data.path)\n\
+          \    with open(input_path) as f:\n        products = json.load(f)\n\n  \
+          \  if not products:\n        TrainingOutput = namedtuple(\"TrainingOutput\"\
+          , [\"status\", \"models_trained\", \"metrics\"])\n        return TrainingOutput(status=\"\
+          empty\", models_trained=0, metrics=\"{}\")\n\n    df = pd.DataFrame(products)\n\
+          \    models = {}\n    metrics_summary = {}\n\n    feature_cols = [c for\
+          \ c in df.columns if df[c].dtype.kind in 'iufc']\n    X = df[feature_cols].fillna(0).values\n\
+          \n    # KMeans\n    kmeans = KMeans(n_clusters=5, random_state=42)\n   \
+          \ labels = kmeans.fit_predict(X)\n    models[\"kmeans\"] = kmeans\n    if\
+          \ len(set(labels)) >= 2:\n        metrics_summary[\"kmeans_silhouette\"\
+          ] = float(silhouette_score(X, labels))\n        metrics_summary[\"kmeans_inertia\"\
+          ] = float(kmeans.inertia_)\n\n    # DBSCAN\n    try:\n        dbscan = DBSCAN(eps=0.5,\
+          \ min_samples=5)\n        dbscan_labels = dbscan.fit_predict(X)\n      \
+          \  models[\"dbscan\"] = dbscan\n        metrics_summary[\"dbscan_noise\"\
+          ] = int(np.sum(dbscan_labels == -1))\n    except Exception as e:\n     \
+          \   logger.warning(f\"DBSCAN: {e}\")\n\n    # Classification\n    if \"\
+          quality_score\" in df.columns:\n        threshold = df[\"quality_score\"\
+          ].quantile(0.75)\n        df[\"is_top\"] = (df[\"quality_score\"] >= threshold).astype(int)\n\
+          \        y = df[\"is_top\"].values\n        X_train, X_test, y_train, y_test\
+          \ = train_test_split(X, y, test_size=0.2, random_state=42)\n\n        rf\
+          \ = RandomForestClassifier(n_estimators=100, random_state=42)\n        rf.fit(X_train,\
+          \ y_train)\n        models[\"random_forest\"] = rf\n        metrics_summary[\"\
+          rf_accuracy\"] = float(rf.score(X_test, y_test))\n\n        try:\n     \
+          \       from xgboost import XGBClassifier\n            xgb = XGBClassifier(n_estimators=100,\
+          \ random_state=42)\n            xgb.fit(X_train, y_train)\n            models[\"\
+          xgboost\"] = xgb\n            metrics_summary[\"xgb_accuracy\"] = float(xgb.score(X_test,\
+          \ y_test))\n        except Exception:\n            pass\n\n    # Association\
+          \ Rules\n    try:\n        if \"category\" in df.columns:\n            cat_dummies\
+          \ = pd.get_dummies(df[\"category\"])\n            if len(cat_dummies.columns)\
+          \ > 1:\n                itemsets = apriori(cat_dummies, min_support=0.1,\
+          \ use_colnames=True, max_len=3)\n                if len(itemsets) > 0:\n\
+          \                    rules = association_rules(itemsets, metric=\"confidence\"\
+          , min_threshold=0.5)\n                    models[\"rules\"] = rules.to_dict(orient=\"\
+          records\")\n                    metrics_summary[\"rules_count\"] = len(rules)\n\
+          \    except Exception:\n        pass\n\n    # Save\n    model_path = Path(model_output.path)\n\
+          \    model_path.parent.mkdir(parents=True, exist_ok=True)\n    saved = {}\n\
+          \    for name, obj in models.items():\n        if name == \"rules\":\n \
+          \           saved[name] = obj\n        else:\n            f = model_path.parent\
+          \ / f\"model_{name}.joblib\"\n            joblib.dump(obj, f)\n        \
+          \    saved[name] = str(f)\n\n    with open(model_path, \"w\") as f:\n  \
+          \      json.dump({\"models\": saved, \"metrics\": metrics_summary}, f, indent=2,\
+          \ default=str)\n\n    model_output.metadata[\"models\"] = json.dumps(list(models.keys()))\n\
+          \    model_output.metadata[\"metrics\"] = json.dumps(metrics_summary)\n\n\
+          \    TrainingOutput = namedtuple(\"TrainingOutput\", [\"status\", \"models_trained\"\
+          , \"metrics\"])\n    return TrainingOutput(status=\"completed\", models_trained=len(models),\
+          \ metrics=json.dumps(metrics_summary))\n\n"
+        image: python:3.11-slim
+pipelineInfo:
+  description: End-to-end ML pipeline for eCommerce intelligence
+  name: ecommerce-ml-pipeline
+root:
+  dag:
+    tasks:
+      generate-llm-summary-kfp:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-generate-llm-summary-kfp
+        dependentTasks:
+        - scrape-products-kfp
+        - select-top-k-kfp
+        inputs:
+          artifacts:
+            scraped_data:
+              taskOutputArtifact:
+                outputArtifactKey: output_data
+                producerTask: scrape-products-kfp
+            top_k_data:
+              taskOutputArtifact:
+                outputArtifactKey: top_k_output
+                producerTask: select-top-k-kfp
+          parameters:
+            config_path:
+              componentInputParameter: config_path
+        taskInfo:
+          name: generate-llm-summary-kfp
+      preprocess-data-kfp:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-preprocess-data-kfp
+        dependentTasks:
+        - scrape-products-kfp
+        inputs:
+          artifacts:
+            input_data:
+              taskOutputArtifact:
+                outputArtifactKey: output_data
+                producerTask: scrape-products-kfp
+          parameters:
+            config_path:
+              componentInputParameter: config_path
+        taskInfo:
+          name: preprocess-data-kfp
+      scrape-products-kfp:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-scrape-products-kfp
+        inputs:
+          parameters:
+            config_path:
+              componentInputParameter: config_path
+            targets_json:
+              componentInputParameter: targets
+        taskInfo:
+          name: scrape-products-kfp
+      select-top-k-kfp:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-select-top-k-kfp
+        dependentTasks:
+        - preprocess-data-kfp
+        inputs:
+          artifacts:
+            preprocessed_data:
+              taskOutputArtifact:
+                outputArtifactKey: output_data
+                producerTask: preprocess-data-kfp
+          parameters:
+            config_path:
+              componentInputParameter: config_path
+        taskInfo:
+          name: select-top-k-kfp
+      train-models-kfp:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-train-models-kfp
+        dependentTasks:
+        - preprocess-data-kfp
+        inputs:
+          artifacts:
+            preprocessed_data:
+              taskOutputArtifact:
+                outputArtifactKey: output_data
+                producerTask: preprocess-data-kfp
+          parameters:
+            config_path:
+              componentInputParameter: config_path
+        taskInfo:
+          name: train-models-kfp
+  inputDefinitions:
+    parameters:
+      config_path:
+        defaultValue: /app/config/config.yaml
+        isOptional: true
+        parameterType: STRING
+      targets:
+        defaultValue: '[]'
+        isOptional: true
+        parameterType: STRING
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.16.1

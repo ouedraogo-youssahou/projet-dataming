@@ -1,0 +1,14 @@
+{
+  "pipeline_version_reference": {
+    "pipeline_id": "687d9211-80f1-4172-a2f3-d6c872aab0e3",
+    "pipeline_version_id": "ef130712-92c9-4129-882f-f43c340320a6"
+  },
+  "display_name": "run-test-1",
+  "service_account": "default-editor",
+  "runtime_config": {
+    "parameters": {
+      "targets": "[{\"platform\": \"woocommerce\", \"url\": \"https://famous-breath.localsite.io\"}]",
+      "config_path": "/app/config/config.yaml"
+    }
+  }
+}

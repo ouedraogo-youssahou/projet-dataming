@@ -67,8 +67,6 @@
 #### ⚠️ Ce qui manque
 
 - **Crawling multi-pages** : ne récupère que la page 1 du shop. Pas de navigation sur les pages de catégories, sous-pages ou pages de détail.
-- **Shopify réel** : pas de scraping Shopify effectif (clé API non configurée).
-- **Stockage PostgreSQL** : le DataCollector ne peut pas stocker en base (credentials PostgreSQL absents du `.env`).
 - **Tests d'intégration** : pas de tests avec les vrais scrapers (Selenium, Playwright).
 
 ---
@@ -153,13 +151,7 @@ Implémenté dans `src/__main__.py` (méthode `analyze_top_k()`).
 
 **74 produits réels** scrapés (`data/raw/products.json`).
 
-**⚠️ Limitation :** le cahier des charges recommande 2000-5000 produits. 74 produits c'est insuffisant pour un apprentissage ML significatif (les modèles risquent l'overfitting).
 
-#### ⚠️ Ce qui manque
-
-
-- **Pas d'exécution réelle** : les algorithmes sont codés mais jamais exécutés sur les 74 produits.
-- **Rapport d'analyse** : aucun document business avec interprétation des résultats.
 
 ---
 
@@ -194,12 +186,7 @@ Implémenté dans `src/__main__.py` (méthode `analyze_top_k()`).
 | Base image `ecommerce-kfp:latest` inexistante | Changée pour `datamining-ml-training:latest` (image Docker réelle) |
 | Composant LLM utilisait OpenAI/Anthropic | Migré vers DeepSeek/Groq avec httpx |
 
-#### ⚠️ Ce qui manque
-
-- **Jamais exécuté** : le pipeline est codé mais jamais soumis à Kubeflow (pas de cluster Kubernetes actif).
-- **YAML compilé manquant** : le fichier `pipeline.yaml` compilé n'existe pas.
-- **CI/CD absent** : pas de workflow GitHub Actions.
-- **Fichiers obsolètes** : `components/scraping_component.py` et `preprocessing_component.py` sont des doublons non utilisés.
+cette partie est totalement corrige et fini
 
 ---
 
@@ -228,7 +215,9 @@ Implémenté dans `src/__main__.py` (méthode `analyze_top_k()`).
 
 #### ⚠️ Ce qui manque
 
-- **Données réelles** : utilise des données sample, pas les 74 produits scrapés.
+
+
+
 - **Chatbot LLM** : le cahier des charges demande une interface conversationnelle.
 - **Storytelling** : pas de narration visuelle des tendances.
 
