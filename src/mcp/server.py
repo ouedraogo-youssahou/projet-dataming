@@ -76,7 +76,7 @@ class MCPServer:
                 "tools": [
                     {
                         "name": "scrape_shopify",
-                        "description": "Scrape product data from a Shopify store using Storefront API or HTML fallback.",
+                        "description": "Scrape product data from a Shopify store using Storefront API (no HTML fallback).",
                         "inputSchema": {
                             "type": "object",
                             "properties": {
@@ -175,9 +175,11 @@ class MCPServer:
             from src.__main__ import SmartECommerceIntelligence
             import yaml
             from pathlib import Path
+            from src.config import expand_config_vars
             cfg_path = Path(__file__).parent.parent / "config" / "config.yaml"
             with open(cfg_path) as f:
                 cfg = yaml.safe_load(f)
+            cfg = expand_config_vars(cfg)
             engine = SmartECommerceIntelligence(cfg)
             top_k = engine.analyze_top_k(products, k=k, weights=weights)
             logger.info(f"MCP analyze_top_k: {len(products)} products -> top {k}")
@@ -192,9 +194,11 @@ class MCPServer:
             from src.__main__ import SmartECommerceIntelligence
             import yaml
             from pathlib import Path
+            from src.config import expand_config_vars
             cfg_path = Path(__file__).parent.parent / "config" / "config.yaml"
             with open(cfg_path) as f:
                 cfg = yaml.safe_load(f)
+            cfg = expand_config_vars(cfg)
             engine = SmartECommerceIntelligence(cfg)
             if custom_prompt:
                 summary = engine.llm.complete(custom_prompt, max_tokens=500)
@@ -236,10 +240,12 @@ app = MCPServer({"server": {"name": "Ecommerce MCP Server", "version": "1.0.0"}}
 if __name__ == "__main__":
     import yaml
     from pathlib import Path
+    from src.config import expand_config_vars
 
     config_path = Path(__file__).parent.parent / "config" / "config.yaml"
     with open(config_path) as f:
         config = yaml.safe_load(f)
+    config = expand_config_vars(config)
 
     server = MCPServer(config.get("mcp", {}))
     server.run(host=config.get("mcp", {}).get("server", {}).get("host", "0.0.0.0"), port=config.get("mcp", {}).get("server", {}).get("port", 8000))

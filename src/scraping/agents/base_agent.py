@@ -116,7 +116,10 @@ class BaseAgent(ABC):
             self._message_consumer_task.cancel()
             try:
                 await self._message_consumer_task
-            except asyncio.CancelledError:
+            except (asyncio.CancelledError, RuntimeError) as e:
+                # RuntimeError can occur if task is not a valid future (already cancelled/done)
+                if isinstance(e, RuntimeError) and "wasn't used with future" not in str(e):
+                    raise
                 pass
 
         # Cancel all active tasks
@@ -176,6 +179,8 @@ class BaseAgent(ABC):
             await self._send_status()
         elif message.msg_type == A2AMessageType.ORCHESTRATOR_PAUSE:
             self.status = AgentStatus.IDLE
+        elif message.msg_type == A2AMessageType.DATA_ACK:
+            logger.debug(f"Agent {self.agent_id}: data acknowledged by '{message.sender_id}'")
         else:
             logger.warning(f"Agent {self.agent_id} unknown message type: {message.msg_type}")
 

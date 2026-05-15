@@ -12,6 +12,8 @@ services:
       dockerfile: Dockerfile
       target: dashboard
     container_name: ecommerce-dashboard
+    env_file:
+      - .env
     ports:
       - "8501:8501"
     volumes:
@@ -21,7 +23,7 @@ services:
       - ./data:/app/data
     environment:
       - PYTHON_ENV=development
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-sk-73e4d05b6a5848afa79614910d604f4f}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - POSTGRES_HOST=postgres
       - REDIS_HOST=redis
@@ -51,6 +53,8 @@ services:
       dockerfile: Dockerfile
       target: scraper
     container_name: ecommerce-scraper
+    env_file:
+       - .env
     volumes:
       - ./src/scraping:/app/src/scraping
       - ./config:/app/config

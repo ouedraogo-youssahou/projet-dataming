@@ -53,8 +53,10 @@ class WooCommerceScraper(BaseScraper):
     async def scrape_all(self, url: str, max_pages: int = 50) -> list:
         """
         Crawl ALL products from a WooCommerce store via REST API.
-        Utilise Basic Auth (mathematics:succinct) pour le serveur + clés API WooCommerce.
+        Utilise Basic Auth (mathematics/succinct) + consumer keys.
         Pagination automatique pour récupérer tous les produits.
+
+        ⚠️ Pas de mode démo : si l'API échoue, une exception est levée.
         """
         import aiohttp
         import os
@@ -62,7 +64,7 @@ class WooCommerceScraper(BaseScraper):
 
         base = self._get_base_url(url)
         if not base:
-            return []
+            raise ValueError(f"Invalid URL: {url}")
 
         login_user = os.getenv("WOOCOMMERCE_USERNAME", "mathematics")
         login_pass = os.getenv("WOOCOMMERCE_PASSWORD", "succinct")
@@ -78,7 +80,6 @@ class WooCommerceScraper(BaseScraper):
 
         async with aiohttp.ClientSession(headers=basic_headers) as session:
             while page <= max_pages:
-                # Ajouter les clés API WooCommerce en paramètres URL
                 params = {
                     "per_page": per_page,
                     "page": page,
@@ -91,14 +92,15 @@ class WooCommerceScraper(BaseScraper):
                         timeout=aiohttp.ClientTimeout(total=30),
                     ) as resp:
                         if resp.status != 200:
-                            logger.warning(f"API returned {resp.status} at page {page}")
-                            break
+                            logger.error(f"API returned {resp.status} at page {page}")
+                            raise RuntimeError(f"WooCommerce API error: HTTP {resp.status}")
                         data = await resp.json()
                 except Exception as e:
                     logger.error(f"Error fetching page {page}: {e}")
-                    break
+                    raise RuntimeError(f"WooCommerce API unreachable: {e}")
 
                 if not isinstance(data, list) or len(data) == 0:
+                    logger.info("No more products to fetch")
                     break
 
                 for product in data:
@@ -108,46 +110,11 @@ class WooCommerceScraper(BaseScraper):
                 page += 1
                 await self._throttle()
 
+        if len(all_products) == 0:
+            raise RuntimeError("No products fetched from WooCommerce API")
+
         logger.info(f"API crawl complete: {len(all_products)} products from {page-1} pages")
         return all_products
-
-    async def _scrape_html_fallback(self, url: str) -> Dict[str, Any]:
-        """HTML fallback for sites without API access."""
-        import aiohttp
-        import re
-        import json
-
-        await self._throttle()
-        self.rotate_user_agent()
-
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    url,
-                    headers=self.headers,
-                    timeout=aiohttp.ClientTimeout(total=self.timeout),
-                ) as resp:
-                    html = await resp.text()
-
-            ld_match = re.search(r'<script type="application/ld\+json">(.*?)</script>', html, re.DOTALL)
-            if ld_match:
-                try:
-                    ld = json.loads(ld_match.group(1))
-                    if isinstance(ld, list):
-                        ld = ld[0]
-                    if ld.get("@type") == "Product":
-                        return self.normalize_product({
-                            "title": ld.get("name", ""),
-                            "description": ld.get("description", ""),
-                            "price": ld.get("offers", {}).get("price", 0),
-                            "available": "InStock" in ld.get("offers", {}).get("availability", ""),
-                        })
-                except Exception:
-                    pass
-            return self.normalize_product({"title": url.split("/")[-1]})
-        except Exception as e:
-            logger.error(f"HTML fallback error: {e}")
-            return self.normalize_product({"title": url})
 
     def _get_base_url(self, url: str) -> Optional[str]:
         """Extract base store URL from product URL."""
@@ -180,7 +147,7 @@ class WooCommerceScraper(BaseScraper):
         category = categories[0].get("name", "") if categories else ""
 
         return {
-            "product_id": product.get("id", ""),
+            "product_id": str(product.get("id", "")) if product.get("id") is not None else "",
             "name": product.get("name", ""),
             "description": product.get("description", ""),
             "category": category,

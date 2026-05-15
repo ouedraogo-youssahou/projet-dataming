@@ -88,10 +88,13 @@ class AgentOrchestrator:
         return False
 
     async def start(self):
-        """Start the orchestrator: begin processing task queue."""
+        """Start the orchestrator: begin processing task queue and listening for messages."""
         self._running = True
         self.start_time = time.time()
         self._orchestrator_task = asyncio.create_task(self._process_task_queue())
+        # Subscribe to orchestrator messages (task_complete, task_failed, etc.)
+        await self.message_bus.subscribe("orchestrator")
+        self._consumer_task = asyncio.create_task(self._consume_messages())
         logger.info("Orchestrator started")
 
     async def stop(self):
@@ -112,6 +115,14 @@ class AgentOrchestrator:
             self._orchestrator_task.cancel()
             try:
                 await self._orchestrator_task
+            except asyncio.CancelledError:
+                pass
+
+        # Cancel consumer task
+        if hasattr(self, '_consumer_task') and self._consumer_task:
+            self._consumer_task.cancel()
+            try:
+                await self._consumer_task
             except asyncio.CancelledError:
                 pass
 
@@ -209,6 +220,41 @@ class AgentOrchestrator:
                     logger.error(f"Orchestrator queue processing error: {e}")
         except asyncio.CancelledError:
             pass
+
+    async def _consume_messages(self):
+        """Listen for incoming A2A messages and process task results."""
+        try:
+            while self._running:
+                try:
+                    message = await self.message_bus.consume("orchestrator", timeout=5.0)
+                    if message:
+                        await self._process_message(message)
+                except asyncio.TimeoutError:
+                    continue
+                except Exception as e:
+                    logger.error(f"Orchestrator consume error: {e}")
+                    await asyncio.sleep(1)
+        except asyncio.CancelledError:
+            pass
+
+    async def _process_message(self, message: A2AMessage):
+        """Route an incoming message to the appropriate handler."""
+        if message.msg_type == A2AMessageType.TASK_COMPLETE:
+            await self.handle_task_complete(message)
+        elif message.msg_type == A2AMessageType.TASK_FAILED:
+            await self.handle_task_failed(message)
+        elif message.msg_type == A2AMessageType.TASK_PROGRESS:
+            await self.handle_task_progress(message)
+        elif message.msg_type == A2AMessageType.DATA_TRANSFER:
+            await self.handle_data_transfer(message)
+        elif message.msg_type == A2AMessageType.TASK_ACCEPT:
+            logger.debug(f"Task accepted by '{message.sender_id}': {message.payload.get('task_id')}")
+        elif message.msg_type == A2AMessageType.TASK_REJECT:
+            logger.warning(f"Task rejected by '{message.sender_id}': {message.payload.get('reason')}")
+        elif message.msg_type == A2AMessageType.AGENT_HEARTBEAT:
+            logger.debug(f"Heartbeat from '{message.sender_id}'")
+        else:
+            logger.debug(f"Orchestrator received unhandled message type: {message.msg_type} from '{message.sender_id}'")
 
     async def _dispatch_task(self, task: Task) -> bool:
         """Assign a task to the best available agent."""

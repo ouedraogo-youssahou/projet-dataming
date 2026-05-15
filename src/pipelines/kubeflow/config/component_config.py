@@ -5,6 +5,7 @@
 import yaml
 from pathlib import Path
 from typing import Any, Dict, Optional
+from src.config import expand_config_vars
 
 
 def load_pipeline_config(config_path: Optional[str] = None) -> Dict[str, Any]:
@@ -14,8 +15,7 @@ def load_pipeline_config(config_path: Optional[str] = None) -> Dict[str, Any]:
 
     with open(config_path) as f:
         config = yaml.safe_load(f)
-
-    return config
+    return expand_config_vars(config)
 
 
 def get_component_config(config: Dict[str, Any], component_name: str) -> Dict[str, Any]:

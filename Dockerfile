@@ -40,6 +40,8 @@ RUN pip install --no-cache-dir -r requirements-dashboard.txt
 # Copier les sources nécessaires
 COPY src/dashboard/ ./src/dashboard/
 COPY src/data_analysis/ ./src/data_analysis/
+COPY src/llm/ ./src/llm/
+COPY src/__init__.py ./src/
 COPY config/ ./config/
 COPY data/ ./data/
 
@@ -81,15 +83,12 @@ RUN playwright install chromium --with-deps
 
 # Copier le code scraping + package src
 COPY src/scraping/ ./src/scraping/
+COPY src/config/ ./src/config/
 COPY src/__init__.py ./src/
 COPY config/ ./config/
 
-# Créer répertoire de sortie + user non-root
-RUN mkdir -p /app/data/raw && \
-    useradd --create-home --shell /bin/bash scraper && \
-    chown -R scraper:scraper /app
-
-USER scraper
+# Créer répertoire de sortie (pas de user non-root pour éviter les problèmes de volume Windows)
+RUN mkdir -p /app/data/raw
 
 CMD ["dumb-init", "--", "python", "-m", "src.scraping.main"]
 

@@ -13,6 +13,7 @@ from pathlib import Path
 import yaml
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
+from src.config import expand_config_vars
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,8 @@ class TaskScheduler:
     def _load_config(self) -> dict:
         """Load configuration."""
         with open(self.config_path) as f:
-            return yaml.safe_load(f)
+            config = yaml.safe_load(f)
+        return expand_config_vars(config)
 
     def _get_engine(self):
         """Lazy-init du moteur principal (évite l'import lourd au démarrage)."""

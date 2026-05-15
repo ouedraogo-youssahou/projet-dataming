@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class ShopifyScraper(BaseScraper):
-    """Shopify Storefront API + HTML fallback scraper."""
+    """Shopify Storefront API scraper (no HTML fallback)."""
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
@@ -17,17 +17,17 @@ class ShopifyScraper(BaseScraper):
         self.access_token = self.config.get("access_token", "")
 
     async def scrape(self, url: str, **kwargs) -> Dict[str, Any]:
-        """Try Storefront GraphQL first, fall back to HTML parsing."""
+        """
+        Scrape a Shopify product via Storefront GraphQL API only.
+        No HTML fallback – requires valid access_token and .myshopify.com domain.
+        """
         await self._throttle()
-        # Try GraphQL if we have token and it's a shopify domain
-        if self.access_token and ".myshopify.com" in url:
-            try:
-                return await self._scrape_graphql(url)
-            except Exception as e:
-                logger.warning(f"GraphQL scrape failed for {url}: {e}, falling back")
+        if not self.access_token:
+            raise ValueError("ShopifyScraper: access_token required, no fallback available")
+        if ".myshopify.com" not in url:
+            raise ValueError(f"ShopifyScraper: invalid Shopify URL: {url}")
 
-        # HTML fallback
-        return await self._scrape_html(url)
+        return await self._scrape_graphql(url)
 
     async def _scrape_graphql(self, url: str) -> Dict[str, Any]:
         """Query Storefront API for product data."""
@@ -147,74 +147,3 @@ class ShopifyScraper(BaseScraper):
 
         return self._parse_shopify_gql(product)
 
-    def _parse_shopify_gql(self, product: Dict[str, Any]) -> Dict[str, Any]:
-        """Parse GraphQL product response."""
-        variants = product.get("variants", {}).get("edges", [])
-        prices = []
-        total_qty = 0
-        available = False
-        for v in variants:
-            node = v.get("node", {})
-            price = node.get("price", 0)
-            prices.append(float(price) if price else 0.0)
-            qty = node.get("inventoryQuantity", 0) or 0
-            total_qty += qty if qty else 0
-            if node.get("availableForSale"):
-                available = True
-
-        images = product.get("images", {}).get("edges", [])
-        image_urls = [e["node"]["originalSrc"] for e in images if e.get("node", {}).get("originalSrc")]
-
-        # Try to get rating from metafield
-        rating_raw = product.get("rating", {}).get("value")
-        reviews_raw = product.get("reviewsCount", {}).get("value")
-
-        return {
-            "product_id": product.get("id", ""),
-            "name": product.get("title", ""),
-            "description": product.get("description", "") or product.get("descriptionHtml", ""),
-            "category": product.get("productType", ""),
-            "price": min(prices) if prices else 0.0,
-            "currency": "USD",
-            "availability": available,
-            "quantity": total_qty,
-            "vendor": product.get("vendor", ""),
-            "rating": float(rating_raw) if rating_raw else None,
-            "reviews_count": int(reviews_raw) if reviews_raw else None,
-            "images": image_urls,
-            "tags": product.get("tags", []),
-        }
-
-    async def _scrape_html(self, url: str) -> Dict[str, Any]:
-        """Basic HTML fallback using aiohttp + selectors."""
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=self.headers, timeout=aiohttp.ClientTimeout(total=self.timeout)) as resp:
-                html = await resp.text()
-
-        # Very simple heuristics - in practice use BeautifulSoup or parsel
-        import re
-        # Extract JSON-LD if present
-        ld_match = re.search(r'<script type="application/ld\+json">(.*?)</script>', html, re.DOTALL)
-        if ld_match:
-            import json
-            try:
-                ld = json.loads(ld_match.group(1))
-                if isinstance(ld, list):
-                    ld = ld[0]
-                if ld.get("@type") == "Product":
-                    name = ld.get("name", "")
-                    desc = ld.get("description", "")
-                    offers = ld.get("offers", {})
-                    price = offers.get("price") if isinstance(offers, dict) else 0
-                    avail = offers.get("availability", "") if isinstance(offers, dict) else ""
-                    return self.normalize_product({
-                        "title": name,
-                        "description": desc,
-                        "price": price,
-                        "available": "InStock" in avail or True,
-                    })
-            except Exception:
-                pass
-
-        # Fallback to basic normalization
-        return self.normalize_product({"title": url.split("/")[-1].replace("-", " ").title(), "price": 0})

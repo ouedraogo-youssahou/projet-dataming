@@ -248,10 +248,12 @@ class SmartECommerceIntelligence:
 if __name__ == "__main__":
     import yaml
     from pathlib import Path
+    from src.config import expand_config_vars
 
     config_path = Path(__file__).parent.parent / "config" / "config.yaml"
     with open(config_path) as f:
         config = yaml.safe_load(f)
+    config = expand_config_vars(config)
 
     engine = SmartECommerceIntelligence(config)
 

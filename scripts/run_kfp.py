@@ -1,46 +1,74 @@
 #!/usr/bin/env python
-"""Submit a Kubeflow pipeline run via SDK v2."""
-from kfp import client
+"""Submit a Kubeflow pipeline run via SDK v2.
 
-c = client.Client(host="http://127.0.0.1:57556")
+Usage:
+    python scripts/run_kfp.py                    # Submit pipeline
+    python scripts/run_kfp.py --compile-only      # Only compile to YAML
+    python scripts/run_kfp.py --host <url>        # Specify KFP host manually
+"""
+import sys
+import os
+from kfp import client, compiler
 
-# Get pipeline versions
-pipeline_id = "687d9211-80f1-4172-a2f3-d6c872aab0e3"
-versions = c.list_pipeline_versions(pipeline_id=pipeline_id).versions
-print("Versions:", [(v.version_id, v.display_name) for v in versions])
+DEFAULT_HOST = os.getenv("KFP_HOST", "http://127.0.0.1:61567")
+PIPELINE_YAML = "src/pipelines/kubeflow/pipeline.yaml"
 
-if not versions:
-    print("No versions found - need to upload properly")
-    # Upload pipeline with version
-    result = c.upload_pipeline(
-        pipeline_package_path="src/pipelines/kubeflow/pipeline.yaml",
-        pipeline_name="ecommerce-ml-pipeline",
+
+def compile_pipeline():
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+    from src.pipelines.kubeflow.pipeline import ecommerce_pipeline
+    compiler.Compiler().compile(pipeline_func=ecommerce_pipeline, package_path=PIPELINE_YAML)
+    print(f"✅ Pipeline compiled to {PIPELINE_YAML}")
+    return True
+
+
+def submit_pipeline(host: str):
+    print(f"🔗 Connecting to Kubeflow at: {host}")
+    c = client.Client(host=host)
+
+    import datetime
+    name = f"ecommerce-ml-pipeline-{datetime.datetime.now().strftime('%H%M%S')}"
+    result = c.upload_pipeline(pipeline_package_path=PIPELINE_YAML, pipeline_name=name)
+    pid = result.pipeline_id if hasattr(result, 'pipeline_id') else result.id
+    print(f"✅ Uploaded: {pid} ({name})")
+
+    exp_id = "2ddcd9a8-8a77-43bc-a239-41874f7f7918"
+
+    # Build params with all secrets
+    params = {
+        "woo_url": os.getenv("WOOCOMMERCE_STORE_URL", "https://stethoscopic-revivably-jamey.ngrok-free.dev"),
+        
+        "targets": "[]",
+    }
+
+    job = f"ecommerce-run-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
+    print(f"🚀 Submitting: {job}")
+
+    run = c.run_pipeline(
+        experiment_id=exp_id,
+        job_name=job,
+        pipeline_package_path=PIPELINE_YAML,
+        params=params,
     )
-    print(f"Uploaded pipeline: {result.pipeline_id}, version: {result.version_id}")
-    pipeline_id = result.pipeline_id
-    version_id = result.version_id
-else:
-    version_id = versions[0].version_id
+    rid = run.run_id if hasattr(run, 'run_id') else run.id
+    print(f"   Run ID: {rid}")
+    print(f"   URL:    {host}/#/runs/details/{rid}")
+    return run
 
-# Get or create experiment
-exps = c.list_experiments().experiments
-exp_id = None
-for e in exps:
-    if e.display_name == "ecommerce":
-        exp_id = e.experiment_id
-        break
 
-if not exp_id:
-    exp = c.create_experiment(name="ecommerce")
-    exp_id = exp.experiment_id
-    print(f"Created experiment: {exp_id}")
+def main():
+    compile_only = '--compile-only' in sys.argv
+    host = DEFAULT_HOST
+    for i, arg in enumerate(sys.argv):
+        if arg == '--host' and i + 1 < len(sys.argv):
+            host = sys.argv[i + 1]
+    if not compile_pipeline():
+        sys.exit(1)
+    if compile_only:
+        print("✅ Compile-only mode.")
+        return
+    submit_pipeline(host)
 
-run = c.run_pipeline(
-    experiment_id=exp_id,
-    job_name="run-test-1",
-    pipeline_id=pipeline_id,
-    version_id=version_id,
-)
 
-print(f"Run submitted successfully!")
-print(f"Run ID: {run.run_id}")
+if __name__ == "__main__":
+    main()

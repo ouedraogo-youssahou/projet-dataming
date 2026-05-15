@@ -11,16 +11,6 @@ class TestShopifyScraper:
     """Test Shopify scraper with public test stores."""
 
     @pytest.mark.asyncio
-    async def test_scrape_html_fallback(self):
-        """Test HTML fallback scraping (no auth required)."""
-        scraper = ShopifyScraper()
-        # Using a public demo store
-        result = await scraper.scrape("https://storefront-demo.myshopify.com")
-        assert result is not None
-        assert "name" in result or "title" in result
-        assert "price" in result
-
-    @pytest.mark.asyncio
     async def test_user_agent_rotation(self):
         """Test user agent rotation."""
         scraper = ShopifyScraper()
@@ -42,13 +32,6 @@ class TestShopifyScraper:
 
 class TestWooCommerceScraper:
     """Test WooCommerce scraper."""
-
-    @pytest.mark.asyncio
-    async def test_html_fallback(self):
-        """Test HTML fallback for WooCommerce."""
-        scraper = WooCommerceScraper()
-        result = await scraper._scrape_html_fallback("https://example.com")
-        assert result is not None
 
     @pytest.mark.asyncio
     async def test_base_url_extraction(self):

@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 
 import yaml
+from src.config import expand_config_vars
 
 from src.scraping.agents import (
     A2AMessageBus,
@@ -31,6 +32,7 @@ async def load_targets(targets_file=None, targets_list=None):
     config_path = Path(__file__).parent.parent.parent / "config" / "config.yaml"
     with open(config_path) as f:
         config = yaml.safe_load(f)
+    config = expand_config_vars(config)
 
     # Check for targets in config
     targets_from_config = config.get("scraping", {}).get("targets", [])
@@ -65,6 +67,7 @@ async def main():
     config_path = Path(__file__).parent.parent.parent / "config" / "config.yaml"
     with open(config_path) as f:
         config = yaml.safe_load(f)
+    config = expand_config_vars(config)
 
     # Get Redis config
     use_redis = config.get("agents", {}).get("a2a", {}).get("use_redis", False)

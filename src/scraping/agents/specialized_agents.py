@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class ShopifyAgent(BaseAgent):
     """
     A2A Agent specialized in scraping Shopify stores.
-    Uses ShopifyScraper (GraphQL API + HTML fallback).
+    Uses ShopifyScraper (GraphQL API only, no HTML fallback).
     Rate limited to 2 requests/second.
     """
 
@@ -100,7 +100,7 @@ class ShopifyAgent(BaseAgent):
 class WooCommerceAgent(BaseAgent):
     """
     A2A Agent specialized in scraping WooCommerce stores.
-    Uses WooCommerceScraper (REST API + HTML fallback).
+    Uses WooCommerceScraper (REST API only, no HTML fallback).
     Rate limited to 4 requests/second.
     """
 

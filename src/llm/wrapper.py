@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
@@ -14,8 +15,17 @@ class LLMWrapper:
         config: Optional[Dict[str, Any]] = None,
     ):
         self.config = config or {}
-        self.deepseek_key = deepseek_key or self.config.get("deepseek", {}).get("api_key")
-        self.groq_key = groq_key or self.config.get("groq", {}).get("api_key")
+        # Fallback: variables d'environnement si clés non fournies
+        self.deepseek_key = (
+            deepseek_key
+            or self.config.get("deepseek", {}).get("api_key")
+            or os.getenv("DEEPSEEK_API_KEY")
+        )
+        self.groq_key = (
+            groq_key
+            or self.config.get("groq", {}).get("api_key")
+            or os.getenv("GROQ_API_KEY")
+        )
 
     def complete(
         self,
@@ -26,16 +36,27 @@ class LLMWrapper:
         temperature: float = 0.7,
         **kwargs,
     ) -> str:
-        """Generate completion. provider: 'deepseek', 'groq', or 'auto'."""
+        """
+        Generate completion.
+        provider: 'deepseek', 'groq', or 'auto' (auto: DeepSeek → Groq fallback, skipping providers with payment errors)
+        """
         if provider == "auto":
-            if self.deepseek_key:
-                provider = "deepseek"
-            elif self.groq_key:
-                provider = "groq"
+            # Auto: essayer Groq en premier (provider principal), fallback DeepSeek
+            if self.groq_key:
+                try:
+                    return self._complete_groq(prompt, model, max_tokens, temperature, **kwargs)
+                except Exception as e:
+                    logger.warning(f"Groq failed, falling back to DeepSeek: {e}")
+                    if self.deepseek_key:
+                        return self._complete_deepseek(prompt, model, max_tokens, temperature, **kwargs)
+                    else:
+                        raise RuntimeError("Groq failed and no DeepSeek key available")
+            elif self.deepseek_key:
+                return self._complete_deepseek(prompt, model, max_tokens, temperature, **kwargs)
             else:
                 raise RuntimeError("No LLM provider configured (DeepSeek or Groq)")
 
-        if provider == "deepseek":
+        elif provider == "deepseek":
             return self._complete_deepseek(prompt, model, max_tokens, temperature, **kwargs)
         elif provider == "groq":
             return self._complete_groq(prompt, model, max_tokens, temperature, **kwargs)
@@ -86,7 +107,9 @@ class LLMWrapper:
     ) -> str:
         """Complete using Groq API."""
         import httpx
-        model = model or "mixtral-8x7b-32768"
+        # Modèles Groq valides (juin 2024) : priorité au modèle performant
+        default_model = "llama-3.3-70b-versatile"
+        model = model or default_model
         try:
             resp = httpx.post(
                 "https://api.groq.com/openai/v1/chat/completions",

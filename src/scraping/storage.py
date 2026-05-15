@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 from typing import Any, Dict, List, Optional
 from datetime import datetime
@@ -56,7 +57,7 @@ class PostgreSQLStorage:
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS products (
                     id SERIAL PRIMARY KEY,
-                    product_id VARCHAR(255),
+                    product_id VARCHAR(255) UNIQUE,
                     name TEXT,
                     description TEXT,
                     category VARCHAR(255),
@@ -96,6 +97,9 @@ class PostgreSQLStorage:
                 p = dict(product)
                 p["source_url"] = p.get("source_url") or source_url
                 p["updated_at"] = datetime.utcnow()
+                # Serialize JSON fields explicitly for asyncpg JSONB
+                p["images"] = json.dumps(p.get("images", []))
+                p["tags"] = json.dumps(p.get("tags", []))
 
                 await conn.execute("""
                     INSERT INTO products (
@@ -127,8 +131,8 @@ class PostgreSQLStorage:
                     p.get("vendor", ""),
                     p.get("rating"),
                     p.get("reviews_count"),
-                    p.get("images", []),
-                    p.get("tags", []),
+                    p["images"],
+                    p["tags"],
                     p.get("source_url"),
                 )
                 stored += 1

@@ -49,9 +49,10 @@ class DataCollectorAgent(BaseAgent):
         )
         self.config = config or {}
 
-        # Storage backend
+        # Storage backend (PostgreSQL uniquement, pas de fallback fichier)
         db_config = self.config.get("database", {}).get("postgresql", {})
         self.storage = PostgreSQLStorage({"postgresql": db_config})
+        self._storage_initialized = False
 
         # Collected data buffers
         self._data_buffer: List[Dict[str, Any]] = []
@@ -64,7 +65,6 @@ class DataCollectorAgent(BaseAgent):
         self.products_stored: int = 0
         self.storage_errors: int = 0
         self._flush_task: Optional[asyncio.Task] = None
-        self._storage_initialized = False
 
         self.metadata["data_collector"] = True
 
@@ -78,30 +78,12 @@ class DataCollectorAgent(BaseAgent):
             self._storage_initialized = True
             logger.info("DataCollector: PostgreSQL storage initialized")
         except Exception as e:
-            logger.warning(f"DataCollector: PostgreSQL init failed, using memory only: {e}")
+            logger.warning(f"DataCollector: PostgreSQL init failed, cannot store data: {e}")
             self._storage_initialized = False
 
         # Start periodic flush
         self._flush_task = asyncio.create_task(self._periodic_flush())
         logger.info("DataCollector agent initialized")
-
-    async def shutdown(self):
-        """Shutdown: flush remaining data, close storage."""
-        # Flush remaining buffer
-        await self.flush_buffer()
-
-        if self._flush_task:
-            self._flush_task.cancel()
-            try:
-                await self._flush_task
-            except asyncio.CancelledError:
-                pass
-
-        # Close storage
-        if self._storage_initialized:
-            await self.storage.close()
-
-        await super().shutdown()
 
     async def scrape(self, task: Task) -> Any:
         """
@@ -208,8 +190,7 @@ class DataCollectorAgent(BaseAgent):
                 async with self._buffer_lock:
                     self._data_buffer.extend(batch)
         else:
-            logger.info(f"DataCollector: storage not available, data kept in memory "
-                         f"(total in memory: {self.products_collected})")
+            logger.warning(f"DataCollector: PostgreSQL not initialized, {len(batch)} products NOT stored – data will be lost")
 
     async def _periodic_flush(self):
         """Periodically flush buffer to storage."""

@@ -11,10 +11,12 @@ logger = logging.getLogger(__name__)
 async def main():
     """Boucle principale du scraper : utilise les agents A2A."""
     import yaml
+    from src.config import expand_config_vars
 
     config_path = Path(__file__).parent.parent.parent / "config" / "config.yaml"
     with open(config_path) as f:
         config = yaml.safe_load(f)
+    config = expand_config_vars(config)
 
     # Importer les agents A2A (uniquement ce qui est nécessaire pour le scraping)
     from src.scraping.agents.message_bus import A2AMessageBus, AgentRegistry
@@ -53,7 +55,7 @@ async def main():
     if woo_url:
         targets.append({"platform": "woocommerce", "url": woo_url})
     else:
-        # Fallback si pas d'URL configurée
+        # Cible par défaut si aucune URL configurée
         targets = [{"platform": "woocommerce", "url": "https://majestic-cheese.localsite.io"}]
 
     logger.info(f"Scraper démarré avec {len(agents)} agents et {len(targets)} cibles")

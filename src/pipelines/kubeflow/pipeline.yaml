@@ -3,7 +3,13 @@
 # Description: End-to-end ML pipeline for eCommerce intelligence
 # Inputs:
 #    config_path: str [Default: '/app/config/config.yaml']
+#    consumer_key: str [Default: '']
+#    consumer_secret: str [Default: '']
+#    groq_api_key: str [Default: '']
 #    targets: str [Default: '[]']
+#    woo_pass: str [Default: 'succinct']
+#    woo_url: str [Default: '']
+#    woo_user: str [Default: 'mathematics']
 components:
   comp-generate-llm-summary-kfp:
     executorLabel: exec-generate-llm-summary-kfp
@@ -19,6 +25,10 @@ components:
             schemaVersion: 0.0.1
       parameters:
         config_path:
+          parameterType: STRING
+        groq_api_key:
+          defaultValue: ''
+          isOptional: true
           parameterType: STRING
     outputDefinitions:
       artifacts:
@@ -61,7 +71,27 @@ components:
       parameters:
         config_path:
           parameterType: STRING
+        consumer_key:
+          defaultValue: ''
+          isOptional: true
+          parameterType: STRING
+        consumer_secret:
+          defaultValue: ''
+          isOptional: true
+          parameterType: STRING
         targets_json:
+          parameterType: STRING
+        woo_pass:
+          defaultValue: succinct
+          isOptional: true
+          parameterType: STRING
+        woo_url:
+          defaultValue: ''
+          isOptional: true
+          parameterType: STRING
+        woo_user:
+          defaultValue: mathematics
+          isOptional: true
           parameterType: STRING
     outputDefinitions:
       artifacts:
@@ -98,6 +128,57 @@ components:
           parameterType: STRING
         top_k_count:
           parameterType: NUMBER_INTEGER
+  comp-store-to-database-kfp:
+    executorLabel: exec-store-to-database-kfp
+    inputDefinitions:
+      artifacts:
+        model_data:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+        scraped_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+        summary_data:
+          artifactType:
+            schemaTitle: system.Artifact
+            schemaVersion: 0.0.1
+        top_k_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        config_path:
+          parameterType: STRING
+        db_host:
+          defaultValue: host.minikube.internal
+          isOptional: true
+          parameterType: STRING
+        db_name:
+          defaultValue: ecommerce_db
+          isOptional: true
+          parameterType: STRING
+        db_password:
+          defaultValue: secure_password
+          isOptional: true
+          parameterType: STRING
+        db_port:
+          defaultValue: 5432.0
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        db_user:
+          defaultValue: ecommerce_user
+          isOptional: true
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        products_stored:
+          parameterType: NUMBER_INTEGER
+        status:
+          parameterType: STRING
+        summary_stored:
+          parameterType: BOOLEAN
   comp-train-models-kfp:
     executorLabel: exec-train-models-kfp
     inputDefinitions:
@@ -153,36 +234,35 @@ deploymentSpec:
         - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
           \ *\n\ndef generate_llm_summary_kfp(\n    scraped_data: Input[Dataset],\n\
           \    top_k_data: Input[Dataset],\n    config_path: str,\n    summary_output:\
-          \ Output[Artifact],\n) -> NamedTuple(\n    \"SummaryOutput\",\n    [(\"\
-          status\", str), (\"summary_length\", int)],\n):\n    \"\"\"KFP Component:\
-          \ Generate LLM summary using DeepSeek or Groq.\"\"\"\n    import json\n\
-          \    import logging\n    from pathlib import Path\n    from collections\
-          \ import namedtuple\n    import yaml\n    import httpx\n\n    logger = logging.getLogger(__name__)\n\
-          \    logging.basicConfig(level=logging.INFO)\n\n    with open(scraped_data.path)\
-          \ as f:\n        all_products = json.load(f)\n    with open(top_k_data.path)\
-          \ as f:\n        top_k = json.load(f)\n\n    if not all_products:\n    \
+          \ Output[Artifact],\n    groq_api_key: str = \"\",\n) -> NamedTuple(\n \
+          \   \"SummaryOutput\",\n    [(\"status\", str), (\"summary_length\", int)],\n\
+          ):\n    \"\"\"KFP Component: Generate LLM summary using DeepSeek or Groq.\"\
+          \"\"\n    import json\n    import logging\n    import os\n    from pathlib\
+          \ import Path\n    from collections import namedtuple\n    import httpx\n\
+          \n    logger = logging.getLogger(__name__)\n    logging.basicConfig(level=logging.INFO)\n\
+          \n    with open(scraped_data.path) as f:\n        all_products = json.load(f)\n\
+          \    with open(top_k_data.path) as f:\n        top_k = json.load(f)\n\n\
+          \    if not all_products:\n        SummaryOutput = namedtuple(\"SummaryOutput\"\
+          , [\"status\", \"summary_length\"])\n        return SummaryOutput(status=\"\
+          empty\", summary_length=0)\n\n    prompt = (\n        \"You are a smart\
+          \ eCommerce analyst. Summarize this dataset in 3-4 sentences.\\n\"\n   \
+          \     f\"Total products: {len(all_products)}\\n\"\n        f\"Top products:\
+          \ {[p.get('name', 'Unknown') for p in top_k[:3]]}\\n\"\n        \"Focus\
+          \ on price range, ratings, availability, and main categories.\"\n    )\n\
+          \n    # Groq (unique provider) \u2014 priorit\xE9 au param\xE8tre, fallback\
+          \ env\n    groq_key = groq_api_key or os.getenv(\"GROQ_API_KEY\", \"\")\n\
+          \    if not groq_key:\n        raise RuntimeError(\"GROQ_API_KEY not configured\"\
+          )\n\n    resp = httpx.post(\"https://api.groq.com/openai/v1/chat/completions\"\
+          ,\n        headers={\"Authorization\": f\"Bearer {groq_key}\", \"Content-Type\"\
+          : \"application/json\"},\n        json={\"model\": \"llama-3.3-70b-versatile\"\
+          , \"messages\": [{\"role\": \"user\", \"content\": prompt}], \"max_tokens\"\
+          : 500},\n        timeout=30)\n    resp.raise_for_status()\n    summary_text\
+          \ = resp.json()[\"choices\"][0][\"message\"][\"content\"].strip()\n\n  \
+          \  summary_path = Path(summary_output.path)\n    summary_path.parent.mkdir(parents=True,\
+          \ exist_ok=True)\n    with open(summary_path, \"w\") as f:\n        f.write(summary_text)\n\
+          \n    summary_output.metadata[\"summary_length\"] = len(summary_text)\n\n\
           \    SummaryOutput = namedtuple(\"SummaryOutput\", [\"status\", \"summary_length\"\
-          ])\n        return SummaryOutput(status=\"empty\", summary_length=0)\n\n\
-          \    prompt = (\n        \"You are a smart eCommerce analyst. Summarize\
-          \ this dataset in 3-4 sentences.\\n\"\n        f\"Total products: {len(all_products)}\\\
-          n\"\n        f\"Top products: {[p.get('name', 'Unknown') for p in top_k[:3]]}\\\
-          n\"\n        \"Focus on price range, ratings, availability, and main categories.\"\
-          \n    )\n\n    summary_text = None\n\n    # DeepSeek\n    deepseek_key =\
-          \ \"sk-73e4d05b6a5848afa79614910d604f4f\"\n    try:\n        resp = httpx.post(\"\
-          https://api.deepseek.com/v1/chat/completions\",\n            headers={\"\
-          Authorization\": f\"Bearer {deepseek_key}\", \"Content-Type\": \"application/json\"\
-          },\n            json={\"model\": \"deepseek-chat\", \"messages\": [{\"role\"\
-          : \"user\", \"content\": prompt}], \"max_tokens\": 500},\n            timeout=30)\n\
-          \        resp.raise_for_status()\n        summary_text = resp.json()[\"\
-          choices\"][0][\"message\"][\"content\"].strip()\n    except Exception as\
-          \ e:\n        logger.warning(f\"DeepSeek failed: {e}\")\n\n    if not summary_text:\n\
-          \        summary_text = f\"Dataset: {len(all_products)} products. Top picks:\
-          \ {[p.get('name','?') for p in top_k[:3]]}.\"\n\n    summary_path = Path(summary_output.path)\n\
-          \    summary_path.parent.mkdir(parents=True, exist_ok=True)\n    with open(summary_path,\
-          \ \"w\") as f:\n        f.write(summary_text)\n\n    summary_output.metadata[\"\
-          summary_length\"] = len(summary_text)\n\n    SummaryOutput = namedtuple(\"\
-          SummaryOutput\", [\"status\", \"summary_length\"])\n    return SummaryOutput(status=\"\
-          completed\" if summary_text else \"fallback\", summary_length=len(summary_text))\n\
+          ])\n    return SummaryOutput(status=\"completed\", summary_length=len(summary_text))\n\
           \n"
         image: python:3.11-slim
     exec-preprocess-data-kfp:
@@ -257,8 +337,8 @@ deploymentSpec:
         - -c
         - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
           \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
-          \ python3 -m pip install --quiet --no-warn-script-location 'pyyaml'  &&\
-          \  python3 -m pip install --quiet --no-warn-script-location 'kfp==2.16.1'\
+          \ python3 -m pip install --quiet --no-warn-script-location 'pyyaml' 'aiohttp'\
+          \  &&  python3 -m pip install --quiet --no-warn-script-location 'kfp==2.16.1'\
           \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
           $0\" \"$@\"\n"
         - sh
@@ -273,41 +353,85 @@ deploymentSpec:
           '
         - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
           \ *\n\ndef scrape_products_kfp(\n    config_path: str,\n    targets_json:\
-          \ str,\n    output_data: Output[Dataset],\n) -> NamedTuple(\n    \"ScrapingOutput\"\
-          ,\n    [\n        (\"status\", str),\n        (\"total_products\", int),\n\
-          \        (\"platforms\", str),\n    ],\n):\n    \"\"\"KFP Component: Charge\
-          \ les 74 produits d\xE9j\xE0 scrap\xE9s depuis data/raw/products.json.\"\
-          \"\"\n    import json\n    import logging\n    from pathlib import Path\n\
-          \    from collections import namedtuple\n\n    logger = logging.getLogger(__name__)\n\
-          \    logging.basicConfig(level=logging.INFO)\n\n    logger.info(\"Chargement\
-          \ des produits d\xE9j\xE0 scrap\xE9s...\")\n\n    # Chercher le fichier\
-          \ \xE0 plusieurs endroits possibles\n    search_paths = [\n        Path(\"\
-          /app/data/raw/products.json\"),\n        Path(\"/data/raw/products.json\"\
-          ),\n        Path(\"data/raw/products.json\"),\n    ]\n\n    all_products\
-          \ = []\n    for sp in search_paths:\n        if sp.exists():\n         \
-          \   with open(sp) as f:\n                all_products = json.load(f)\n \
-          \           logger.info(f\"Fichier trouv\xE9: {sp} \u2014 {len(all_products)}\
-          \ produits charg\xE9s\")\n            break\n\n    if not all_products:\n\
-          \        # Fallback : 3 produits de d\xE9monstration\n        logger.warning(\"\
-          Aucun fichier trouv\xE9, utilisation des donn\xE9es de d\xE9mo\")\n    \
-          \    all_products = [\n            {\"product_id\": \"1\", \"name\": \"\
-          Odomos Naturals Mosquito Repellent\", \"category\": \"Uncategorized\", \"\
-          price\": 56.0, \"rating\": 0.0, \"reviews_count\": 0, \"availability\":\
-          \ True},\n            {\"product_id\": \"2\", \"name\": \"Priyagold Magic\
-          \ Cake Fruit (150 g)\", \"category\": \"Uncategorized\", \"price\": 29.0,\
-          \ \"rating\": 0.0, \"reviews_count\": 0, \"availability\": True},\n    \
-          \        {\"product_id\": \"3\", \"name\": \"Patanjali Kesh Kanti Shikakai\
-          \ Hair Cleanser (200 ml)\", \"category\": \"Uncategorized\", \"price\":\
-          \ 95.0, \"rating\": 0.0, \"reviews_count\": 0, \"availability\": True},\n\
-          \        ]\n\n    # Sauvegarde\n    output_path = Path(output_data.path)\n\
+          \ str,\n    output_data: Output[Dataset],\n    woo_url: str = \"\",\n  \
+          \  consumer_key: str = \"\",\n    consumer_secret: str = \"\",\n    woo_user:\
+          \ str = \"mathematics\",\n    woo_pass: str = \"succinct\",\n) -> NamedTuple(\n\
+          \    \"ScrapingOutput\",\n    [\n        (\"status\", str),\n        (\"\
+          total_products\", int),\n        (\"platforms\", str),\n    ],\n):\n   \
+          \ \"\"\"KFP Component: Scrape products from WooCommerce via ngrok URL.\"\
+          \"\"\n    import json\n    import logging\n    import os\n    import base64\n\
+          \    import asyncio\n    from pathlib import Path\n    from collections\
+          \ import namedtuple\n\n    logger = logging.getLogger(__name__)\n    logging.basicConfig(level=logging.INFO)\n\
+          \n    # Priorit\xE9 : param\xE8tres \u2192 variables d'environnement \u2192\
+          \ valeurs par d\xE9faut\n    if not woo_url:\n        woo_url = os.getenv(\"\
+          WOOCOMMERCE_STORE_URL\", \"https://stethoscopic-revivably-jamey.ngrok-free.dev\"\
+          )\n    if not consumer_key:\n        consumer_key = os.getenv(\"WOOCOMMERCE_CONSUMER_KEY\"\
+          , \"ck_a554b0e6ad8e1e7ea9e8850acefa9525b6224e17\")\n    if not consumer_secret:\n\
+          \        consumer_secret = os.getenv(\"WOOCOMMERCE_CONSUMER_SECRET\", \"\
+          cs_7b19931e3375156b6eaa34fb1c6697956fdc8a65\")\n\n    all_products = []\n\
+          \n    if woo_url and consumer_key and consumer_secret:\n        logger.info(f\"\
+          Scraping WooCommerce via: {woo_url}\")\n        try:\n            import\
+          \ aiohttp\n\n            async def fetch_products():\n                api_url\
+          \ = f\"{woo_url.rstrip('/')}/wp-json/wc/v3/products\"\n                basic_token\
+          \ = base64.b64encode(f\"{woo_user}:{woo_pass}\".encode()).decode()\n   \
+          \             headers = {\"Authorization\": f\"Basic {basic_token}\"}\n\
+          \                page = 1\n                per_page = 100\n            \
+          \    products = []\n\n                async with aiohttp.ClientSession(headers=headers)\
+          \ as session:\n                    while page <= 50:\n                 \
+          \       params = {\n                            \"per_page\": per_page,\n\
+          \                            \"page\": page,\n                         \
+          \   \"consumer_key\": consumer_key,\n                            \"consumer_secret\"\
+          : consumer_secret,\n                        }\n                        async\
+          \ with session.get(\n                            api_url, params=params,\n\
+          \                            timeout=aiohttp.ClientTimeout(total=30),\n\
+          \                        ) as resp:\n                            if resp.status\
+          \ != 200:\n                                logger.error(f\"API returned\
+          \ {resp.status} at page {page}\")\n                                break\n\
+          \                            data = await resp.json()\n\n              \
+          \          if not isinstance(data, list) or len(data) == 0:\n          \
+          \                  break\n\n                        for product in data:\n\
+          \                            price = product.get(\"price\", \"0\")\n   \
+          \                         regular = product.get(\"regular_price\", \"0\"\
+          )\n                            sale = product.get(\"sale_price\", \"0\"\
+          )\n                            try:\n                                price_val\
+          \ = float(sale) if sale and sale != \"\" else float(regular) if regular\
+          \ and regular != \"\" else float(price)\n                            except\
+          \ ValueError:\n                                price_val = 0.0\n       \
+          \                     categories = product.get(\"categories\", [])\n   \
+          \                         category = categories[0].get(\"name\", \"\") if\
+          \ categories else \"\"\n                            images = product.get(\"\
+          images\", [])\n                            image_urls = [img.get(\"src\"\
+          ) for img in images if img.get(\"src\")]\n\n                           \
+          \ products.append({\n                                \"product_id\": str(product.get(\"\
+          id\", \"\")),\n                                \"name\": product.get(\"\
+          name\", \"\"),\n                                \"description\": product.get(\"\
+          description\", \"\"),\n                                \"category\": category,\n\
+          \                                \"price\": price_val,\n               \
+          \                 \"currency\": product.get(\"currency\", \"USD\"),\n  \
+          \                              \"availability\": product.get(\"stock_status\"\
+          , \"instock\") == \"instock\",\n                                \"quantity\"\
+          : product.get(\"stock_quantity\"),\n                                \"vendor\"\
+          : \"\",\n                                \"rating\": product.get(\"average_rating\"\
+          ),\n                                \"reviews_count\": product.get(\"review_count\"\
+          ),\n                                \"images\": image_urls,\n          \
+          \                      \"tags\": [t.get(\"name\", \"\") for t in product.get(\"\
+          tags\", [])],\n                            })\n\n                      \
+          \  logger.info(f\"Page {page}: {len(data)} products (total: {len(products)})\"\
+          )\n                        page += 1\n\n                return products\n\
+          \n            all_products = asyncio.run(fetch_products())\n           \
+          \ logger.info(f\"Scraped {len(all_products)} products from WooCommerce\"\
+          )\n\n        except Exception as e:\n            logger.error(f\"Scraping\
+          \ failed: {e}\")\n\n    if not all_products:\n        logger.error(\"Scraping\
+          \ failed: no products found. Pipeline aborted.\")\n        raise RuntimeError(\"\
+          No products scraped from WooCommerce API\")\n\n    output_path = Path(output_data.path)\n\
           \    output_path.parent.mkdir(parents=True, exist_ok=True)\n    with open(output_path,\
           \ \"w\") as f:\n        json.dump(all_products, f, indent=2, default=str)\n\
           \n    output_data.metadata[\"num_products\"] = len(all_products)\n    output_data.metadata[\"\
-          platforms\"] = json.dumps([\"woocommerce\"])\n\n    from collections import\
-          \ namedtuple\n    ScrapingOutput = namedtuple(\"ScrapingOutput\", [\"status\"\
-          , \"total_products\", \"platforms\"])\n    return ScrapingOutput(\n    \
-          \    status=\"completed\",\n        total_products=len(all_products),\n\
-          \        platforms=json.dumps([\"woocommerce\"]),\n    )\n\n"
+          platforms\"] = json.dumps([\"woocommerce\"])\n\n    ScrapingOutput = namedtuple(\"\
+          ScrapingOutput\", [\"status\", \"total_products\", \"platforms\"])\n   \
+          \ return ScrapingOutput(\n        status=\"completed\" if all_products else\
+          \ \"empty\",\n        total_products=len(all_products),\n        platforms=json.dumps([\"\
+          woocommerce\"]),\n    )\n\n"
         image: python:3.11-slim
     exec-select-top-k-kfp:
       container:
@@ -363,6 +487,194 @@ deploymentSpec:
           ] = len(top10)\n\n    TopKOutput = namedtuple(\"TopKOutput\", [\"status\"\
           , \"top_k_count\"])\n    return TopKOutput(status=\"completed\", top_k_count=len(top10))\n\
           \n"
+        image: python:3.11-slim
+    exec-store-to-database-kfp:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - store_to_database_kfp
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'asyncpg' 'pyyaml'\
+          \ 'joblib' 'scikit-learn' 'scipy' 'numpy'  &&  python3 -m pip install --quiet\
+          \ --no-warn-script-location 'kfp==2.16.1' '--no-deps' 'typing-extensions>=3.7.4,<5;\
+          \ python_version<\"3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef store_to_database_kfp(\n    scraped_data: Input[Dataset],\n \
+          \   top_k_data: Input[Dataset],\n    model_data: Input[Model],\n    summary_data:\
+          \ Input[Artifact],\n    config_path: str,\n    db_host: str = \"host.minikube.internal\"\
+          ,\n    db_port: int = 5432,\n    db_user: str = \"ecommerce_user\",\n  \
+          \  db_password: str = \"secure_password\",\n    db_name: str = \"ecommerce_db\"\
+          ,\n) -> NamedTuple(\n    \"StorageOutput\",\n    [\n        (\"status\"\
+          , str),\n        (\"products_stored\", int),\n        (\"summary_stored\"\
+          , bool),\n    ],\n):\n    \"\"\"KFP Component: Store pipeline results into\
+          \ PostgreSQL.\"\"\"\n    import json\n    import logging\n    import asyncio\n\
+          \    from pathlib import Path\n    from collections import namedtuple\n\n\
+          \    logger = logging.getLogger(__name__)\n    logging.basicConfig(level=logging.INFO)\n\
+          \n    products_stored = 0\n    summary_stored = False\n\n    try:\n    \
+          \    import asyncpg\n\n        async def store():\n            nonlocal\
+          \ products_stored, summary_stored\n            dsn = f\"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}\"\
+          \n            conn = await asyncpg.connect(dsn)\n\n            # 0. Nettoyer\
+          \ toutes les anciennes donn\xE9es avant d'ins\xE9rer les nouvelles\n   \
+          \         logger.info(\"Nettoyage des anciennes donn\xE9es...\")\n     \
+          \       await conn.execute(\"DELETE FROM products\")\n            await\
+          \ conn.execute(\"DELETE FROM llm_summaries WHERE source = 'kubeflow_pipeline'\"\
+          )\n            await conn.execute(\"DELETE FROM model_metrics WHERE source\
+          \ = 'kubeflow_pipeline'\")\n            await conn.execute(\"DELETE FROM\
+          \ top_k_results WHERE source = 'kubeflow_pipeline'\")\n            logger.info(\"\
+          Anciennes donn\xE9es supprim\xE9es\")\n\n            # 1. Stocker les produits\
+          \ scrap\xE9s\n            scraped_path = Path(scraped_data.path)\n     \
+          \       if scraped_path.exists():\n                with open(scraped_path)\
+          \ as f:\n                    products = json.load(f)\n                if\
+          \ isinstance(products, list) and len(products) > 0:\n                  \
+          \  stored = 0\n                    for product in products:\n          \
+          \              try:\n                            await conn.execute(\"\"\
+          \"\n                                INSERT INTO products (\n           \
+          \                         product_id, name, description, category,\n   \
+          \                                 price, currency, availability, quantity,\n\
+          \                                    vendor, rating, reviews_count, images,\
+          \ tags, source_url\n                                ) VALUES ($1, $2, $3,\
+          \ $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13::jsonb, $14)\n     \
+          \                           ON CONFLICT (product_id) DO UPDATE SET\n   \
+          \                                 name = EXCLUDED.name,\n              \
+          \                      description = EXCLUDED.description,\n           \
+          \                         category = EXCLUDED.category,\n              \
+          \                      price = EXCLUDED.price,\n                       \
+          \             availability = EXCLUDED.availability,\n                  \
+          \                  rating = EXCLUDED.rating,\n                         \
+          \           reviews_count = EXCLUDED.reviews_count,\n                  \
+          \                  updated_at = NOW()\n                            \"\"\"\
+          ,\n                                str(product.get(\"product_id\", \"\"\
+          )),\n                                product.get(\"name\", \"\"),\n    \
+          \                            product.get(\"description\", \"\"),\n     \
+          \                           product.get(\"category\", \"\"),\n         \
+          \                       float(product.get(\"price\", 0)),\n            \
+          \                    product.get(\"currency\", \"USD\"),\n             \
+          \                   bool(product.get(\"availability\", True)),\n       \
+          \                         product.get(\"quantity\"),\n                 \
+          \               product.get(\"vendor\", \"\"),\n                       \
+          \         float(product.get(\"rating\", 0)) if product.get(\"rating\") else\
+          \ None,\n                                int(product.get(\"reviews_count\"\
+          , 0)) if product.get(\"reviews_count\") else None,\n                   \
+          \             json.dumps(product.get(\"images\", [])),\n               \
+          \                 json.dumps(product.get(\"tags\", [])),\n             \
+          \                   \"kubeflow_pipeline\",\n                           \
+          \ )\n                            stored += 1\n                        except\
+          \ Exception as e:\n                            logger.warning(f\"Failed\
+          \ to store product {product.get('product_id')}: {e}\")\n               \
+          \     products_stored = stored\n                    logger.info(f\"Stored\
+          \ {stored} products in PostgreSQL\")\n\n            # 2. Stocker le r\xE9\
+          sum\xE9 LLM\n            summary_path = Path(summary_data.path)\n      \
+          \      if summary_path.exists():\n                summary_text = summary_path.read_text().strip()\n\
+          \                if summary_text:\n                    # Cr\xE9er la table\
+          \ si elle n'existe pas\n                    await conn.execute(\"\"\"\n\
+          \                        CREATE TABLE IF NOT EXISTS llm_summaries (\n  \
+          \                          id SERIAL PRIMARY KEY,\n                    \
+          \        summary TEXT,\n                            source VARCHAR(50) DEFAULT\
+          \ 'kubeflow_pipeline',\n                            created_at TIMESTAMP\
+          \ DEFAULT NOW()\n                        )\n                    \"\"\")\n\
+          \                    await conn.execute(\n                        \"INSERT\
+          \ INTO llm_summaries (summary, source) VALUES ($1, $2)\",\n            \
+          \            summary_text, \"kubeflow_pipeline\",\n                    )\n\
+          \                    summary_stored = True\n                    logger.info(\"\
+          Stored LLM summary in PostgreSQL\")\n\n            # 3. Stocker les m\xE9\
+          triques ML\n            model_path = Path(model_data.path)\n           \
+          \ if model_path.exists():\n                await conn.execute(\"\"\"\n \
+          \                   CREATE TABLE IF NOT EXISTS model_metrics (\n       \
+          \                 id SERIAL PRIMARY KEY,\n                        metrics\
+          \ JSONB,\n                        source VARCHAR(50) DEFAULT 'kubeflow_pipeline',\n\
+          \                        created_at TIMESTAMP DEFAULT NOW()\n          \
+          \          )\n                \"\"\")\n                with open(model_path)\
+          \ as f:\n                    model_content = json.load(f)\n            \
+          \    metrics = model_content.get(\"metrics\", {})\n                if metrics:\n\
+          \                    await conn.execute(\n                        \"INSERT\
+          \ INTO model_metrics (metrics, source) VALUES ($1::jsonb, $2)\",\n     \
+          \                   json.dumps(metrics), \"kubeflow_pipeline\",\n      \
+          \              )\n                    logger.info(f\"Stored ML metrics in\
+          \ PostgreSQL: {metrics}\")\n\n                # 3b. Stocker les mod\xE8\
+          les ML entra\xEEn\xE9s \xE0 partir des donn\xE9es scrap\xE9es\n        \
+          \        import joblib\n                import io\n                import\
+          \ base64\n                import numpy as np\n                from sklearn.preprocessing\
+          \ import StandardScaler\n                from sklearn.cluster import KMeans,\
+          \ DBSCAN\n                from sklearn.ensemble import RandomForestClassifier\n\
+          \n                await conn.execute(\"\"\"\n                    CREATE\
+          \ TABLE IF NOT EXISTS kfp_models (\n                        id SERIAL PRIMARY\
+          \ KEY,\n                        model_name VARCHAR(50) UNIQUE,\n       \
+          \                 model_data TEXT,\n                        metrics JSONB,\n\
+          \                        created_at TIMESTAMP DEFAULT NOW()\n          \
+          \          )\n                \"\"\")\n\n                # Charger les donn\xE9\
+          es scrap\xE9es pour entra\xEEner les mod\xE8les\n                scraped_path\
+          \ = Path(scraped_data.path)\n                if scraped_path.exists():\n\
+          \                    with open(scraped_path) as f:\n                   \
+          \     products = json.load(f)\n                    if isinstance(products,\
+          \ list) and len(products) > 0:\n                        X = np.array([[float(p.get('price')\
+          \ or 0), float(p.get('rating') or 0), float(p.get('reviews_count') or 0)]\
+          \ for p in products])\n                        Xs = StandardScaler().fit_transform(X)\n\
+          \n                        # KMeans\n                        kmeans = KMeans(n_clusters=5,\
+          \ random_state=42).fit(Xs)\n                        buf = io.BytesIO()\n\
+          \                        joblib.dump(kmeans, buf)\n                    \
+          \    b64 = base64.b64encode(buf.getvalue()).decode()\n                 \
+          \       await conn.execute(\"INSERT INTO kfp_models (model_name, model_data,\
+          \ metrics) VALUES ($1, $2, $3::jsonb) ON CONFLICT (model_name) DO UPDATE\
+          \ SET model_data=EXCLUDED.model_data, metrics=EXCLUDED.metrics, created_at=NOW()\"\
+          , \"kmeans\", b64, json.dumps(metrics))\n                        logger.info(f\"\
+          Stored model 'kmeans' ({len(b64)} bytes)\")\n\n                        #\
+          \ DBSCAN\n                        dbscan = DBSCAN(eps=0.5, min_samples=5).fit(Xs)\n\
+          \                        buf = io.BytesIO()\n                        joblib.dump(dbscan,\
+          \ buf)\n                        b64 = base64.b64encode(buf.getvalue()).decode()\n\
+          \                        await conn.execute(\"INSERT INTO kfp_models (model_name,\
+          \ model_data, metrics) VALUES ($1, $2, $3::jsonb) ON CONFLICT (model_name)\
+          \ DO UPDATE SET model_data=EXCLUDED.model_data, metrics=EXCLUDED.metrics,\
+          \ created_at=NOW()\", \"dbscan\", b64, json.dumps(metrics))\n          \
+          \              logger.info(f\"Stored model 'dbscan' ({len(b64)} bytes)\"\
+          )\n\n                        # Random Forest\n                        if\
+          \ len(set(y_binary := (X[:, 0] > np.median(X[:, 0])).astype(int))) > 1:\n\
+          \                            rf = RandomForestClassifier(n_estimators=100,\
+          \ random_state=42).fit(Xs, y_binary)\n                            buf =\
+          \ io.BytesIO()\n                            joblib.dump(rf, buf)\n     \
+          \                       b64 = base64.b64encode(buf.getvalue()).decode()\n\
+          \                            await conn.execute(\"INSERT INTO kfp_models\
+          \ (model_name, model_data, metrics) VALUES ($1, $2, $3::jsonb) ON CONFLICT\
+          \ (model_name) DO UPDATE SET model_data=EXCLUDED.model_data, metrics=EXCLUDED.metrics,\
+          \ created_at=NOW()\", \"random_forest\", b64, json.dumps(metrics))\n   \
+          \                         logger.info(f\"Stored model 'random_forest' ({len(b64)}\
+          \ bytes)\")\n\n            # 4. Stocker le Top-K\n            top_k_path\
+          \ = Path(top_k_data.path)\n            if top_k_path.exists():\n       \
+          \         await conn.execute(\"\"\"\n                    CREATE TABLE IF\
+          \ NOT EXISTS top_k_results (\n                        id SERIAL PRIMARY\
+          \ KEY,\n                        results JSONB,\n                       \
+          \ source VARCHAR(50) DEFAULT 'kubeflow_pipeline',\n                    \
+          \    created_at TIMESTAMP DEFAULT NOW()\n                    )\n       \
+          \         \"\"\")\n                with open(top_k_path) as f:\n       \
+          \             top_k = json.load(f)\n                await conn.execute(\n\
+          \                    \"INSERT INTO top_k_results (results, source) VALUES\
+          \ ($1::jsonb, $2)\",\n                    json.dumps(top_k), \"kubeflow_pipeline\"\
+          ,\n                )\n                logger.info(f\"Stored Top-K ({len(top_k)}\
+          \ products) in PostgreSQL\")\n\n            await conn.close()\n\n     \
+          \   asyncio.run(store())\n\n    except Exception as e:\n        logger.error(f\"\
+          Failed to store to PostgreSQL: {e}\")\n        StorageOutput = namedtuple(\"\
+          StorageOutput\", [\"status\", \"products_stored\", \"summary_stored\"])\n\
+          \        return StorageOutput(status=f\"error: {e}\", products_stored=products_stored,\
+          \ summary_stored=summary_stored)\n\n    StorageOutput = namedtuple(\"StorageOutput\"\
+          , [\"status\", \"products_stored\", \"summary_stored\"])\n    return StorageOutput(\n\
+          \        status=\"completed\" if products_stored > 0 else \"empty\",\n \
+          \       products_stored=products_stored,\n        summary_stored=summary_stored,\n\
+          \    )\n\n"
         image: python:3.11-slim
     exec-train-models-kfp:
       container:
@@ -477,6 +789,8 @@ root:
           parameters:
             config_path:
               componentInputParameter: config_path
+            groq_api_key:
+              componentInputParameter: groq_api_key
         taskInfo:
           name: generate-llm-summary-kfp
       preprocess-data-kfp:
@@ -506,8 +820,18 @@ root:
           parameters:
             config_path:
               componentInputParameter: config_path
+            consumer_key:
+              componentInputParameter: consumer_key
+            consumer_secret:
+              componentInputParameter: consumer_secret
             targets_json:
               componentInputParameter: targets
+            woo_pass:
+              componentInputParameter: woo_pass
+            woo_url:
+              componentInputParameter: woo_url
+            woo_user:
+              componentInputParameter: woo_user
         taskInfo:
           name: scrape-products-kfp
       select-top-k-kfp:
@@ -528,6 +852,39 @@ root:
               componentInputParameter: config_path
         taskInfo:
           name: select-top-k-kfp
+      store-to-database-kfp:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-store-to-database-kfp
+        dependentTasks:
+        - generate-llm-summary-kfp
+        - scrape-products-kfp
+        - select-top-k-kfp
+        - train-models-kfp
+        inputs:
+          artifacts:
+            model_data:
+              taskOutputArtifact:
+                outputArtifactKey: model_output
+                producerTask: train-models-kfp
+            scraped_data:
+              taskOutputArtifact:
+                outputArtifactKey: output_data
+                producerTask: scrape-products-kfp
+            summary_data:
+              taskOutputArtifact:
+                outputArtifactKey: summary_output
+                producerTask: generate-llm-summary-kfp
+            top_k_data:
+              taskOutputArtifact:
+                outputArtifactKey: top_k_output
+                producerTask: select-top-k-kfp
+          parameters:
+            config_path:
+              componentInputParameter: config_path
+        taskInfo:
+          name: store-to-database-kfp
       train-models-kfp:
         cachingOptions:
           enableCache: true
@@ -552,8 +909,32 @@ root:
         defaultValue: /app/config/config.yaml
         isOptional: true
         parameterType: STRING
+      consumer_key:
+        defaultValue: ''
+        isOptional: true
+        parameterType: STRING
+      consumer_secret:
+        defaultValue: ''
+        isOptional: true
+        parameterType: STRING
+      groq_api_key:
+        defaultValue: ''
+        isOptional: true
+        parameterType: STRING
       targets:
         defaultValue: '[]'
+        isOptional: true
+        parameterType: STRING
+      woo_pass:
+        defaultValue: succinct
+        isOptional: true
+        parameterType: STRING
+      woo_url:
+        defaultValue: ''
+        isOptional: true
+        parameterType: STRING
+      woo_user:
+        defaultValue: mathematics
         isOptional: true
         parameterType: STRING
 schemaVersion: 2.1.0
