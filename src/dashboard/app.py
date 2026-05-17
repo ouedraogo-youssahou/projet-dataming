@@ -608,7 +608,7 @@ def pg_ml(products):
                 models[mn]=asyncio.run(_ld())
             except: pass
 
-        mc=st.radio("Algorithme", ["PCA","KMeans","DBSCAN","RF"], horizontal=True, key="mc")
+        mc=st.radio("Algorithme", ["PCA","KMeans","DBSCAN","Random Forest"], horizontal=True, key="mc")
 
         if mc=="PCA":
             pca=PCA(n_components=2); Xp=pca.fit_transform(Xs); df['_x'],df['_y']=Xp[:,0],Xp[:,1]
@@ -626,7 +626,7 @@ def pg_ml(products):
             fig=px.scatter(df[l!=-1],x='price',y='rating',color='_cl',hover_name='name',
                            title="DBSCAN Clustering",color_discrete_sequence=PLOT_COLORS)
             st.plotly_chart(plot_layout(fig), use_container_width=True)
-        elif mc=="RF" and models.get('random_forest'):
+        elif mc=="Random Forest" and models.get('random_forest'):
             m=models['random_forest']; df['_cl']=m.predict(Xs).astype(str)
             fig=px.scatter(df,x='price',y='rating',color='_cl',hover_name='name',
                            title="Random Forest — Prédictions",color_discrete_sequence=PLOT_COLORS)
@@ -893,12 +893,16 @@ def main():
     ''', unsafe_allow_html=True)
 
     # ── NAV ──
-    pages=[
-        (icon("bar-chart",13),"Vue d'ensemble","overview"),
-        (icon("tag",13),"Les Top-K produits","topk"),
-        (icon("trending-up",13),"Analyses machine learning","analysis"),
-        (icon("award",13),"Analyse concurentielle","competitive"),
-        (icon("settings",13),"Orchestration","infra"),
+    pages = [
+    (icon("bar-chart",13), "Vue d'ensemble", "overview"),
+    (icon("tag",13), "Les Top-K produits", "topk"),
+    (
+        icon("trending-up",13),
+        "<span style='font-size:12px'>Analyses machine learning</span>",
+        "analysis"
+    ),
+    (icon("award",13), "Analyse concurentielle", "competitive"),
+    (icon("settings",13), "Orchestration", "infra"),
     ]
 
     cols=st.columns(len(pages))
