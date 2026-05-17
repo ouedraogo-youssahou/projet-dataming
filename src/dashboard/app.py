@@ -486,7 +486,7 @@ def plot_layout(fig, height=280, margin=None):
 
 def pg_overview(products, src):
     st.markdown(f'<div class="pg-title">Vue d\'ensemble</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="pg-sub">{len(products)} produits indexés · Source : {src}</div>', unsafe_allow_html=True)
+
 
     df=pd.DataFrame(products)
     for c in ['price','rating','reviews_count']:
@@ -681,7 +681,6 @@ def pg_ml(products):
         with ca:
             if tr and len(products)>=30:
                 st.metric("Accuracy XGBoost", f"{acc:.1%}" if acc else "N/A")
-                st.success("Modèle opérationnel")
             elif len(products)>=30: st.info("Modèle non disponible")
             else: st.warning(f"Minimum 30 produits requis ({len(products)} actuellement)")
         with cb:
@@ -883,27 +882,23 @@ def main():
             st.session_state.ch.append({"role":"assistant","content":r})
 
     # ── HEADER ──
-    is_live = (source == "PostgreSQL")
-    badge_cls = "badge live" if is_live else "badge"
-    badge_txt = f"{'✅' if is_live else '📦'} {len(products)} produits · {source}"
-
+   
     st.markdown(f'''
     <div class="app-header">
         <div class="wordmark">
             <div class="mark">🗂️</div>
             <h1>Smart eCommerce</h1>
         </div>
-        <span class="{badge_cls}">{badge_txt}</span>
     </div>
     ''', unsafe_allow_html=True)
 
     # ── NAV ──
     pages=[
         (icon("bar-chart",13),"Vue d'ensemble","overview"),
-        (icon("tag",13),"Classement","topk"),
-        (icon("trending-up",13),"Analyses","analysis"),
-        (icon("award",13),"Concurrence","competitive"),
-        (icon("settings",13),"Infrastructure","infra"),
+        (icon("tag",13),"Les Top-K produits","topk"),
+        (icon("trending-up",13),"Analyses machine learning","analysis"),
+        (icon("award",13),"Analyse concurentielle","competitive"),
+        (icon("settings",13),"Orchestration","infra"),
     ]
 
     cols=st.columns(len(pages))
@@ -924,7 +919,7 @@ def main():
 
     st.markdown(f'''
     <div class="app-footer">
-        Smart eCommerce Intelligence &nbsp;·&nbsp; {len(products)} produits &nbsp;·&nbsp; {source}
+        Smart eCommerce Intelligence &nbsp;·&nbsp;
     </div>
     ''', unsafe_allow_html=True)
 
