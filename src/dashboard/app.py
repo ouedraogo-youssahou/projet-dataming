@@ -710,11 +710,11 @@ def pg_competitive(products):
 
     b1,b2,b3,_=st.columns([1,1,1,1.5])
     with b1:
-        r1=st.button("🔍 Comparer", type="primary", use_container_width=True, key="c1")
+        r1 = st.button("⊕ Comparer", type="primary", use_container_width=True, key="c1")
     with b2:
-        r2=st.button("📈 Émergents", use_container_width=True, key="c2")
+        r2 = st.button("↗ Émergents", use_container_width=True, key="c2")
     with b3:
-        r3=st.button("🧭 Stratégie", use_container_width=True, key="c3")
+        r3 = st.button("◈ Stratégie", use_container_width=True, key="c3")
 
     if "cr" not in st.session_state: st.session_state.cr={}
 
@@ -810,7 +810,7 @@ def pg_infra():
         </div>
         ''', unsafe_allow_html=True)
 
-        if st.button("▶️ Lancer le pipeline", type="primary", use_container_width=True):
+        if st.button("▶ Lancer le pipeline", type="primary", use_container_width=True):
             with st.spinner("Exécution en cours…"):
                 try:
                     import subprocess
@@ -901,7 +901,6 @@ def main():
             <div class="mark">{icon("shop", 18, "#FFFFFF")}</div>
             <h1>Smart eCommerce</h1>
         </div>
-        <span class="{badge_cls}">{badge_txt}</span>
     </div>
     ''', unsafe_allow_html=True)
 
