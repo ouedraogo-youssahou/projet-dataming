@@ -24,34 +24,37 @@ st.set_page_config(page_title="Smart eCommerce", page_icon="◈", layout="wide",
 # ─── SVG ICON LIBRARY ──────────────────────────────────────────
 
 def icon(name, size=16, color="currentColor", cls=""):
-    """Returns a simple emoji span instead of SVG — zero rendering issues."""
+    """Inline SVG icons — simple single-path shapes, always render correctly."""
+    s = size
+    c = color
     icons = {
-        "bar-chart":      "📊",
-        "tag":            "🏷️",
-        "trending-up":    "📈",
-        "award":          "🏆",
-        "settings":       "⚙️",
-        "message-square": "💬",
-        "package":        "📦",
-        "dollar-sign":    "💰",
-        "star":           "⭐",
-        "users":          "👥",
-        "grid":           "▦",
-        "check-circle":   "✅",
-        "play":           "▶️",
-        "activity":       "⚡",
-        "search":         "🔍",
-        "send":           "📨",
-        "cpu":            "🖥️",
-        "wifi":           "🌐",
-        "arrow-up":       "↑",
-        "arrow-down":     "↓",
-        "minus":          "—",
-        "layers":         "🗂️",
-        "compass":        "🧭",
+        "bar-chart":      f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="8"/><rect x="10" y="6" width="4" height="14"/><rect x="17" y="2" width="4" height="18"/></svg>',
+        "tag":            f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="{c}"/></svg>',
+        "trending-up":    f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
+        "award":          f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.11"/></svg>',
+        "settings":       f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>',
+        "message-square": f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+        "package":        f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22" x2="12" y2="12"/></svg>',
+        "dollar-sign":    f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+        "star":           f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+        "users":          f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+        "grid":           f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
+        "check-circle":   f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>',
+        "play":           f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="{c}" stroke="{c}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
+        "activity":       f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+        "search":         f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+        "send":           f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
+        "cpu":            f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>',
+        "wifi":           f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="{c}"/></svg>',
+        "arrow-up":       f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>',
+        "arrow-down":     f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>',
+        "minus":          f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+        "layers":         f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
+        "compass":        f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>',
+        "shop":           f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>',
     }
-    emoji = icons.get(name, "•")
-    return f'<span class="icon-emoji {cls}" style="font-size:{size}px;line-height:1;">{emoji}</span>'
+    svg = icons.get(name, f'<svg width="{s}" height="{s}" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>')
+    return f'<span class="icon-inline {cls}" style="display:inline-flex;align-items:center;vertical-align:middle;">{svg}</span>'
 
 CSS = """
 <style>
@@ -486,7 +489,7 @@ def plot_layout(fig, height=280, margin=None):
 
 def pg_overview(products, src):
     st.markdown(f'<div class="pg-title">Vue d\'ensemble</div>', unsafe_allow_html=True)
-
+    
 
     df=pd.DataFrame(products)
     for c in ['price','rating','reviews_count']:
@@ -608,7 +611,7 @@ def pg_ml(products):
                 models[mn]=asyncio.run(_ld())
             except: pass
 
-        mc=st.radio("Algorithme", ["PCA","KMeans","DBSCAN","Random Forest"], horizontal=True, key="mc")
+        mc=st.radio("Algorithme", ["PCA","KMeans","DBSCAN","RF"], horizontal=True, key="mc")
 
         if mc=="PCA":
             pca=PCA(n_components=2); Xp=pca.fit_transform(Xs); df['_x'],df['_y']=Xp[:,0],Xp[:,1]
@@ -626,7 +629,7 @@ def pg_ml(products):
             fig=px.scatter(df[l!=-1],x='price',y='rating',color='_cl',hover_name='name',
                            title="DBSCAN Clustering",color_discrete_sequence=PLOT_COLORS)
             st.plotly_chart(plot_layout(fig), use_container_width=True)
-        elif mc=="Random Forest" and models.get('random_forest'):
+        elif mc=="RF" and models.get('random_forest'):
             m=models['random_forest']; df['_cl']=m.predict(Xs).astype(str)
             fig=px.scatter(df,x='price',y='rating',color='_cl',hover_name='name',
                            title="Random Forest — Prédictions",color_discrete_sequence=PLOT_COLORS)
@@ -681,6 +684,7 @@ def pg_ml(products):
         with ca:
             if tr and len(products)>=30:
                 st.metric("Accuracy XGBoost", f"{acc:.1%}" if acc else "N/A")
+                st.success("Modèle opérationnel")
             elif len(products)>=30: st.info("Modèle non disponible")
             else: st.warning(f"Minimum 30 produits requis ({len(products)} actuellement)")
         with cb:
@@ -855,18 +859,25 @@ def main():
 
     # ── SIDEBAR ──
     with st.sidebar:
+        from pathlib import Path
+
+
         st.markdown(f'''
         <div class="sidebar-logo">
-            st.image("images/logo 1.jpg", use_container_width=True)
-            <div class="mark">🗂️</div>
+            <div class="mark">{icon("shop", 16, "#FFFFFF")}</div>
             <div>
                 <h2>Smart eCommerce</h2>
                 <span>Intelligence produit</span>
             </div>
         </div>
         ''', unsafe_allow_html=True)
+        LOGO_PATH = Path(__file__).parent / "images" / "image_3.png"
+        if LOGO_PATH.exists():
+         st.image(str(LOGO_PATH), use_container_width=True)
+        else:
+            st.warning("Logo not found")
 
-        st.markdown(f'<div class="sidebar-section">💬 Assistant IA</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="sidebar-section">{icon("message-square", 13, "#6366F1")} Assistant IA</div>', unsafe_allow_html=True)
 
         if "ch" not in st.session_state: st.session_state.ch=[]
         for msg in st.session_state.ch[-6:]:
@@ -882,24 +893,25 @@ def main():
                 st.markdown(r)
             st.session_state.ch.append({"role":"assistant","content":r})
 
-    # ── HEADER ──
-   
+  
+
     st.markdown(f'''
     <div class="app-header">
         <div class="wordmark">
-            <div class="mark">🗂️</div>
+            <div class="mark">{icon("shop", 18, "#FFFFFF")}</div>
             <h1>Smart eCommerce</h1>
         </div>
+        <span class="{badge_cls}">{badge_txt}</span>
     </div>
     ''', unsafe_allow_html=True)
 
     # ── NAV ──
-    pages = [
-    (icon("bar-chart",13), "Vue d'ensemble", "overview"),
-    (icon("tag",13), "Les Top-K produits", "topk"),
-    (icon("trending-up",13), "Machine Learning", "analysis"),
-    (icon("award",13), "Analyse concurentielle", "competitive"),
-    (icon("settings",13), "Orchestration MCP", "infra"),
+    pages=[
+        (icon("bar-chart",13),"Vue d'ensemble","overview"),
+        (icon("tag",13),"Les Top-K produits","topk"),
+        (icon("trending-up",13),"Machine Learning","analysis"),
+        (icon("award",13),"Analyse concurrentielle","competitive"),
+        (icon("settings",13),"Orchestration MCP","infra"),
     ]
 
     cols=st.columns(len(pages))
