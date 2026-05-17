@@ -684,7 +684,6 @@ def pg_ml(products):
         with ca:
             if tr and len(products)>=30:
                 st.metric("Accuracy XGBoost", f"{acc:.1%}" if acc else "N/A")
-                st.success("Modèle opérationnel")
             elif len(products)>=30: st.info("Modèle non disponible")
             else: st.warning(f"Minimum 30 produits requis ({len(products)} actuellement)")
         with cb:
