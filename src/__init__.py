@@ -39,6 +39,12 @@ try:
 except ImportError:
     LLMWrapper = None
 
+try:
+    from src.llm.competitive_analysis import CompetitiveAnalysis, generate_competitive_insights
+except ImportError:
+    CompetitiveAnalysis = None
+    generate_competitive_insights = None
+
 # MCP Server
 try:
     from src.mcp.server import MCPServer
@@ -53,5 +59,7 @@ __all__ = [
     "ClassificationEngine",
     "AssociationEngine",
     "LLMWrapper",
+    "CompetitiveAnalysis",
+    "generate_competitive_insights",
     "MCPServer",
 ]

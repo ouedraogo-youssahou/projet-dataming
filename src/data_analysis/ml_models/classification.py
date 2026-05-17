@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
-from xgboost import XGBClassifier, XGBRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
     accuracy_score,
@@ -16,6 +15,12 @@ from sklearn.metrics import (
     r2_score,
 )
 from sklearn.preprocessing import LabelEncoder, StandardScaler
+
+try:
+    from xgboost import XGBClassifier, XGBRegressor
+    HAS_XGBOOST = True
+except ImportError:
+    HAS_XGBOOST = False
 
 logger = logging.getLogger(__name__)
 
@@ -114,6 +119,8 @@ class ClassificationEngine:
         if model_type == "random_forest":
             model = RandomForestClassifier(n_estimators=100, max_depth=10, min_samples_split=5, random_state=random_state)
         elif model_type == "xgboost":
+            if not HAS_XGBOOST:
+                raise ImportError("xgboost not installed. Install with: pip install xgboost")
             model = XGBClassifier(n_estimators=100, max_depth=6, learning_rate=0.1, random_state=random_state, use_label_encoder=False, eval_metric='logloss')
         elif model_type == "logistic":
             model = LogisticRegression(random_state=random_state, max_iter=1000)
@@ -165,6 +172,8 @@ class ClassificationEngine:
         if model_type == "random_forest":
             model = RandomForestRegressor(n_estimators=100, max_depth=10, min_samples_split=5, random_state=random_state)
         elif model_type == "xgboost":
+            if not HAS_XGBOOST:
+                raise ImportError("xgboost not installed. Install with: pip install xgboost")
             model = XGBRegressor(n_estimators=100, max_depth=6, learning_rate=0.1, random_state=random_state)
         else:
             raise ValueError(f"Unknown model_type: {model_type}")

@@ -18,6 +18,7 @@ from src.data_analysis.ml_models.association import AssociationEngine
 
 # LLM
 from src.llm.wrapper import LLMWrapper
+from src.llm.competitive_analysis import CompetitiveAnalysis
 
 # MCP
 from src.mcp.server import MCPServer

@@ -1,8 +1,9 @@
-from .evaluation import evaluate_clustering, evaluate_classification, evaluate_association, product_features_to_df
+from .trend_analyzer import (
+    TrendAnalyzer,
+    generate_trend_insights,
+)
 
 __all__ = [
-    "evaluate_clustering",
-    "evaluate_classification",
-    "evaluate_association",
-    "product_features_to_df",
+    "TrendAnalyzer",
+    "generate_trend_insights",
 ]

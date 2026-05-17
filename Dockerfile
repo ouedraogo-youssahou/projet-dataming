@@ -42,8 +42,13 @@ COPY src/dashboard/ ./src/dashboard/
 COPY src/data_analysis/ ./src/data_analysis/
 COPY src/llm/ ./src/llm/
 COPY src/__init__.py ./src/
+COPY src/pipelines/ ./src/pipelines/
 COPY config/ ./config/
 COPY data/ ./data/
+COPY scripts/ ./scripts/
+
+# Installer kfp pour submit pipeline depuis dashboard
+RUN pip install --no-cache-dir kfp==2.0.0
 
 # Expose port
 EXPOSE 8501
@@ -78,11 +83,18 @@ RUN pip install --upgrade pip
 COPY requirements-base.txt requirements-scraping.txt ./
 RUN pip install --no-cache-dir -r requirements-base.txt -r requirements-scraping.txt
 
+# Corriger le conflit urllib3 / selenium (BaseHTTPResponse manquant)
+RUN pip install --no-cache-dir 'urllib3<2' 'selenium>=4.15.0,<4.27'
+
+# Installer kfp
+RUN pip install --no-cache-dir kfp==2.0.0
+
 # Installer playwright (navigateur)
 RUN playwright install chromium --with-deps
 
-# Copier le code scraping + package src
+# Copier le code scraping + package src (y compris pipelines pour compilation KFP)
 COPY src/scraping/ ./src/scraping/
+COPY src/pipelines/ ./src/pipelines/
 COPY src/config/ ./src/config/
 COPY src/__init__.py ./src/
 COPY config/ ./config/

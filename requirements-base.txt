@@ -23,6 +23,10 @@ httpx>=0.25.0
 # Data (utilisé partiellement par tous)
 pandas>=2.1.0
 numpy>=1.26.0
+scikit-learn>=1.3.0
+
+# Trend Analysis
+prophet>=1.1.5
 
 # Logging
 loguru>=0.7.0

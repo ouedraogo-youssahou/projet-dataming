@@ -137,6 +137,27 @@ class MCPServer:
                             "properties": {},
                         },
                     },
+                    {
+                        "name": "competitive_analysis",
+                        "description": "Analyse concurrentielle LLM complète : comparaison produits, rapports émergents, recommandations stratégiques.",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {
+                                "products": {
+                                    "type": "array",
+                                    "items": {"type": "object"},
+                                    "description": "Liste des produits à analyser",
+                                },
+                                "analysis_type": {
+                                    "type": "string",
+                                    "enum": ["full", "comparison", "emerging", "recommendations"],
+                                    "description": "Type d'analyse : full (tout), comparison, emerging, recommendations",
+                                    "default": "full",
+                                },
+                            },
+                            "required": ["products"],
+                        },
+                    },
                 ]
             }
 
@@ -206,6 +227,40 @@ class MCPServer:
                 summary = engine.generate_summary(products, top_k)
             logger.info(f"MCP generate_summary: {len(products)} products summarized")
             return {"content": [{"type": "text", "text": summary}]}
+
+        @self.app.post("/tools/competitive_analysis")
+        async def tool_competitive_analysis(payload: Dict[str, Any], _auth=Depends(self._auth_dependency)):
+            products = payload.get("products", [])
+            analysis_type = payload.get("analysis_type", "full")
+            
+            if not products:
+                raise HTTPException(status_code=400, detail="Missing products list")
+            
+            try:
+                import os
+                groq_key = os.getenv("GROQ_API_KEY", "")
+                if not groq_key:
+                    raise HTTPException(status_code=400, detail="GROQ_API_KEY not configured in environment")
+                
+                from src.llm.competitive_analysis import CompetitiveAnalysis
+                analyzer = CompetitiveAnalysis(groq_key=groq_key)
+                
+                if analysis_type == "comparison":
+                    result = analyzer.compare_products(products)
+                elif analysis_type == "emerging":
+                    result = analyzer.generate_emerging_report(products)
+                elif analysis_type == "recommendations":
+                    result = analyzer.generate_strategic_recommendations(products)
+                else:
+                    result = analyzer.run_full_analysis(products)
+                
+                logger.info(f"MCP competitive_analysis ({analysis_type}): {len(products)} products")
+                return {"content": [{"type": "text", "text": str(result)}]}
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.error(f"Competitive analysis error: {e}", exc_info=True)
+                raise HTTPException(status_code=500, detail=str(e))
 
         @self.app.get("/resources")
         async def list_resources(_auth=Depends(self._auth_dependency)):

@@ -1,195 +1,105 @@
-# Smart eCommerce Intelligence avec ML&DM Pipelines, Agents A2A, et LLMs
+# Smart eCommerce Intelligence
+
+## Système Intelligent de Data Mining & Machine Learning pour l'Analyse Concurrentielle eCommerce
 
 ---
 
-## 📋 Présentation du projet
+## 📋 Présentation
 
-Système intelligent et automatisé capable de :
-- **Scraper** des données produits sur WooCommerce via API REST (agents A2A)
-- **Analyser** les produits et identifier les meilleurs (Top-K, clustering, classification, règles d'association)
-- **Orchestrer** les étapes ML avec Kubeflow
-- **Visualiser** les résultats dans un dashboard BI (Streamlit)
-- **Enrichir** l'analyse avec des LLMs (DeepSeek / Groq)
-- **Exposer** un serveur MCP (Model Context Protocol)
+Système complet et automatisé capable de scraper des données produits WooCommerce/Shopify, analyser les données avec des algorithmes de Data Mining (KMeans, DBSCAN, Random Forest, XGBoost, PCA, Apriori), orchestrer les traitements via Kubeflow Pipelines, et visualiser les résultats dans un dashboard Streamlit — le tout enrichi par des LLMs (DeepSeek, Groq) pour des analyses concurrentielles en langage naturel.
 
 ---
 
-## 🗂️ Structure du projet
+## 🚀 Guide de Démarrage Rapide
 
-```
-DATA MINING/
-├── Dockerfile                   # Multi-stage optimisé (8 stages)
-├── docker-compose.yml           # Orchestration multi-conteneurs
-├── .env                         # Variables d'environnement (clés API, credentials)
-├── requirements-*.txt           # Dépendances séparées par service
-│
-├── src/
-│   ├── __init__.py              # Package principal (exports conditionnels)
-│   ├── __main__.py              # Point d'entrée principal (orchestration complète)
-│   ├── scraping/                # Module de web scraping (agents A2A)
-│   │   ├── main.py              # Point d'entrée scraper autonome
-│   │   ├── shopify_scraper.py   # Scraper Shopify (GraphQL + HTML)
-│   │   ├── woocommerce_scraper.py  # Scraper WooCommerce avec pagination + HTML crawl
-│   │   ├── selenium_scraper.py  # Scraper Selenium (JS)
-│   │   ├── playwright_scraper.py # Scraper Playwright (JS)
-│   │   ├── storage.py           # PostgreSQL storage
-│   │   └── agents/              # Architecture A2A complète
-│   ├── data_analysis/           # Analyse de données et ML
-│   │   ├── evaluation.py        # Métriques d'évaluation (silhouette, Calinski-Harabasz, ROC-AUC...)
-│   │   └── ml_models/           # KMeans, DBSCAN, Random Forest, XGBoost, Apriori
-│   ├── pipelines/               # Pipelines ML (Kubeflow)
-│   │   └── kubeflow/pipeline.py # Pipeline DAG 5 composants
-│   ├── dashboard/               # Dashboard BI Streamlit
-│   │   └── app.py               # Dashboard avec mode démo + data réelles
-│   ├── llm/                     # Module LLM (DeepSeek & Groq)
-│   │   └── wrapper.py           # Wrapper httpx (OpenAI/Anthropic retirés)
-│   ├── mcp/                     # Serveur MCP (FastAPI)
-│   │   └── server.py            # API REST + outils scraping/analyse/LLM
-│   ├── scheduler/               # Planificateur de tâches
-│   │   └── main.py              # Jobs cron scraping + ML retrain (import circulaire corrigé)
-│   └── monitoring/              # Métriques Prometheus
-│       └── prometheus_exporter.py
-│
-├── config/config.yaml           # Configuration complète
-├── data/raw/products.json       # 74 produits scrapés (WooCommerce réel)
-├── tests/test_agents.py         # 660 lignes de tests A2A
-└── scripts/                     # Utilitaires de test et déploiement
-```
+### Prérequis
 
----
+| Logiciel | Version | Vérification |
+|---|---|---|
+| **Docker Engine** | 20.10+ | `docker --version` |
+| **Docker Compose** | 2.20+ | `docker compose version` |
+| **Minikube** (optionnel) | 1.30+ | `minikube version` |
+| **Git** | 2.30+ | `git --version` |
 
-## 🐳 Guide d'installation et d'exécution (nouvelle machine)
-
-### Prérequis système
-
-| Logiciel | Version minimale | Téléchargement |
-|----------|-----------------|----------------|
-| **Docker Engine** | 20.10+ | [docs.docker.com/get-docker](https://docs.docker.com/get-docker/) |
-| **Docker Compose** | 2.20+ | Inclus avec Docker Desktop |
-| **Git** | 2.30+ | [git-scm.com](https://git-scm.com/) |
-| **Espace disque** | 15 GB libre | Pour les images Docker + dépendances |
-
-Vérifier l'installation :
-```bash
-docker --version       # Doit afficher 20.10+
-docker compose version # Doit afficher 2.20+
-git --version          # Doit afficher 2.30+
-```
-
-### Étape 1 : Cloner le projet
+### Installation en 5 minutes
 
 ```bash
-git clone https://github.com/ouedraogo-youssahou/projet-dataming.git
-cd projet-dataming
-```
+# 1. Cloner le projet
+git clone <url-du-depot>
+cd DATA MINING
 
-> ⚠️ Si vous n'avez pas les droits, téléchargez le ZIP depuis GitHub et extrayez-le.
-
-### Étape 2 : Configurer les variables d'environnement
-
-```bash
-# Copier le fichier d'exemple
+# 2. Copier et configurer le fichier .env
 cp .env.example .env
 ```
 
-Ouvrir le fichier `.env` et renseigner au minimum les clés suivantes :
+### 3. Configurer le fichier `.env`
 
 ```ini
-# 🔑 CLÉS API OBLIGATOIRES POUR LE SCRAPING WOOCOMMERCE
-WOOCOMMERCE_CONSUMER_KEY=ck_votre_cle_ici
-WOOCOMMERCE_CONSUMER_SECRET=cs_votre_secret_ici
+# Clés API WooCommerce (obligatoires pour le scraping)
+WOOCOMMERCE_CONSUMER_KEY=ck_votre_cle
+WOOCOMMERCE_CONSUMER_SECRET=cs_votre_secret
 WOOCOMMERCE_STORE_URL=https://votre-store.localsite.io
 
-# (Optionnel) Clés DeepSeek pour les résumés LLM
-DEEPSEEK_API_KEY=sk-votre_cle_deepseek
+# Clés LLM (optionnelles, sans le dashboard fonctionne sans)
 GROQ_API_KEY=gsk_votre_cle_groq
+DEEPSEEK_API_KEY=sk_votre_cle_deepseek
+
+# PostgreSQL (valeurs par défaut)
+POSTGRES_USER=ecommerce_user
+POSTGRES_PASSWORD=secure_password
+
+# MCP Server
+MCP_API_KEY=mcp_api_key
 ```
 
-> 💡 **Pour le scraping du site de démonstration :**
+> **💡 Identifiants de démonstration (store WooCommerce de test) :**
 > - Store : `https://famous-breath.localsite.io`
 > - Consumer Key : `ck_a554b0e6ad8e1e7ea9e8850acefa9525b6224e17`
 > - Consumer Secret : `cs_7b19931e3375156b6eaa34fb1c6697956fdc8a65`
-> - Auth Basic : username `mathematics`, password `succinct`
-> - Ces identifiants sont déjà pré-remplis dans le fichier `.env.example`
+> - Basic Auth : utilisateur `mathematics`, mot de passe `succinct`
 
-### Étape 3 : Lancer les services Docker
+---
 
-#### Option A : Tout lancer (recommandé)
+## 🐳 Commandes Docker
+
+### Lancer tous les services
 
 ```bash
-# Construire toutes les images (première fois seulement, ~15-30 min)
-docker compose build
-
-# Démarrer tous les services
 docker compose up -d
-
-# Vérifier que tout est healthy
-docker compose ps
 ```
 
-Résultat attendu :
-```
-NAME                   IMAGE                          STATUS          PORTS
-ecommerce-dashboard    datamining-dashboard:latest    Up (healthy)    0.0.0.0:8501->8501
-ecommerce-scraper      datamining-scraper:latest      Up (healthy)    
-ecommerce-mcp-server   datamining-mcp-server:latest   Up (healthy)    0.0.0.0:8000->8000
-ecommerce-ml-training  datamining-ml-training:latest  Up (running)    
-ecommerce-postgres     postgres:15-alpine             Up (healthy)    0.0.0.0:5432->5432
-ecommerce-redis        redis:7-alpine                 Up (healthy)    0.0.0.0:6379->6379
-```
-
-#### Option B : Lancer uniquement les services essentiels
+### Lancer uniquement les services essentiels
 
 ```bash
-# Minimum pour le scraping + ML + MCP
-docker compose up -d postgres redis mcp-server dashboard scraper ml-training
+docker compose up -d postgres redis dashboard mcp-server
 ```
 
-### Étape 4 : Scraper des données produits
+### Lancer le scraper (une seule exécution)
 
-Le scraper démarre automatiquement et va crawler le store WooCommerce configuré dans `.env` :
+Le conteneur `scraper` compile et soumet la pipeline Kubeflow, puis s'arrête :
 
 ```bash
-# Voir les logs du scraper en direct
-docker logs -f ecommerce-scraper
+docker compose up -d scraper
 ```
 
-Logs attendus :
-```
-INFO:__main__:Scraper démarré avec 4 agents et 1 cibles
-INFO:...:Starting API crawl: https://.../wp-json/wc/v3/products
-INFO:...:Page 1: 74 products (total: 74)
-INFO:...:API crawl complete: 74 products
+Pour relancer le scraping (soumet un nouveau run Kubeflow) :
+
+```bash
+docker compose run --rm scraper
 ```
 
-Les produits scrapés sont stockés dans `data/raw/products.json`.
-
-### Étape 5 : Accéder aux services
-
-| Service | URL | Identifiants |
-|---------|-----|--------------|
-| **Dashboard Streamlit** | [http://localhost:8501](http://localhost:8501) | Aucun |
-| **MCP Server API** | [http://localhost:8000](http://localhost:8000) | API key : `mcp_api_key` |
-| **MCP Health** | [http://localhost:8000/health](http://localhost:8000/health) | — |
-| **PostgreSQL** | `localhost:5432` | user `ecommerce_user`, password `secure_password` |
-| **Redis** | `localhost:6379` | password `redis_password` |
-| **pgAdmin** (dev) | [http://localhost:5050](http://localhost:5050) | admin@example.com / pgadmin_password |
-| **Jupyter** (dev) | [http://localhost:8888](http://localhost:8888) | token : `jupyter_token` |
-
-> Pour lancer pgAdmin et Jupyter : `docker compose --profile dev up -d`
-
-### Commandes utiles au quotidien
+### Gestion des services
 
 ```bash
 # Voir les logs d'un service
-docker compose logs -f scraper          # Logs du scraper
-docker compose logs -f dashboard        # Logs du dashboard
-docker compose logs -f mcp-server       # Logs du serveur MCP
+docker compose logs -f scraper
+docker compose logs -f dashboard
+docker compose logs -f mcp-server
 
-# Redémarrer un service après modification du code
-docker compose restart scraper
+# Redémarrer un service
+docker compose restart dashboard
 
-# Reconstruire un service après modification du Dockerfile
+# Reconstruire et redémarrer
 docker compose build scraper --no-cache
 docker compose up -d scraper
 
@@ -198,126 +108,237 @@ docker compose down
 
 # Arrêter et supprimer les volumes (perte des données PostgreSQL)
 docker compose down -v
-
-# Exécuter une commande dans un conteneur
-docker exec -it ecommerce-scraper python -c "print('hello from scraper')"
 ```
 
-### Résolution des problèmes courants
+### Profils Docker
 
-#### Problème : "Port already in use"
-```bash
-# Le port 8501 ou 8000 est déjà utilisé sur la machine
-# Modifier le port dans docker-compose.yml :
-#   "8501:8501" → "8502:8501"  (dashboard sur le port 8502)
-```
+| Profil | Commande | Services supplémentaires |
+|---|---|---|
+| **Développement** | `docker compose --profile dev up -d` | Jupyter (8888), pgAdmin (5050) |
+| **Production** | `docker compose --profile production up -d` | Scheduler, agent-cluster, metrics |
+| **Monitoring** | `docker compose --profile monitoring up -d` | Prometheus metrics (9090) |
 
-#### Problème : "PostgreSQL init failed"
-```bash
-# Les credentials PostgreSQL ne sont pas dans .env
-# Vérifier que POSTGRES_USER et POSTGRES_PASSWORD sont définis
-cat .env | grep POSTGRES
-```
+### Services disponibles
 
-#### Problème : "docker compose build trop lent"
-```bash
-# Utiliser le cache Docker (ne pas mettre --no-cache)
-docker compose build
-
-# Pour un service spécifique uniquement
-docker compose build scraper
-```
-
-#### Problème : "API returned 401"
-```bash
-# Les clés WooCommerce ou l'auth Basic sont incorrectes
-# Vérifier le .env :
-#   WOOCOMMERCE_CONSUMER_KEY
-#   WOOCOMMERCE_CONSUMER_SECRET
-#   WOOCOMMERCE_USERNAME / WOOCOMMERCE_PASSWORD (si auth Basic requise)
-```
-
-### Services Docker disponibles
-
-| Service | Image | Port | Taille | Profil |
-|---------|-------|------|--------|--------|
-| **Dashboard** | `datamining-dashboard` | 8501 | ~1.5 GB | default |
-| **Scraper** | `datamining-scraper` | — | ~3 GB | default |
-| **ML Training** | `datamining-ml-training` | — | ~3.7 GB | default |
-| **MCP Server** | `datamining-mcp-server` | 8000 | ~1 GB | default |
-| **PostgreSQL** | `postgres:15-alpine` | 5432 | — | default |
-| **Redis** | `redis:7-alpine` | 6379 | — | default |
-| **Jupyter** (dev) | `datamining-jupyter` | 8888 | ~3.5 GB | `dev` |
-| **pgAdmin** (dev) | `dpage/pgadmin4` | 5050 | — | `dev` |
+| Service | URL | Identifiants |
+|---|---|---|
+| **Dashboard Streamlit** | [http://localhost:8501](http://localhost:8501) | Aucun |
+| **MCP Server API** | [http://localhost:8000](http://localhost:8000) | API key : `mcp_api_key` |
+| **MCP Health** | [http://localhost:8000/health](http://localhost:8000/health) | — |
+| **PostgreSQL** | `localhost:5432` | user `ecommerce_user`, password `secure_password` |
+| **Redis** | `localhost:6379` | password `redis_password` |
+| **pgAdmin** (dev) | [http://localhost:5050](http://localhost:5050) | admin@example.com / pgadmin_password |
+| **Jupyter** (dev) | [http://localhost:8888](http://localhost:8888) | token : `dev_token_123` |
 
 ---
 
-## 🚀 Modules détaillés
+## 📊 Accès au Dashboard
 
-### 1. Web Scraping avec agents A2A
-- **Architecture A2A complète** : Protocol, MessageBus (in-memory + Redis), AgentRegistry, BaseAgent, Orchestrator
-- **Agents spécialisés** : ShopifyAgent, WooCommerceAgent, GenericScraperAgent, DataCollectorAgent
-- **Scrapers** : Shopify (GraphQL + HTML fallback), WooCommerce (REST API + HTML crawl), Selenium, Playwright
-- **Crawling réel** : 74 produits scrapés depuis `famous-breath.localsite.io` via WooCommerce REST API avec Basic Auth + clés API
-- **Tests** : 660 lignes couvrant protocol, bus, agents, orchestrateur
+1. Ouvrir [http://localhost:8501](http://localhost:8501)
+2. Le dashboard charge les produits depuis :
+   - **PostgreSQL** (si des données existent)
+   - **Fichier JSON** (`data/raw/products.json`)
+   - **Données d'exemple** (3 produits factices en fallback)
 
-### 2. Analyse ML et Data Mining
-- **Top-K Selection** : Scoring multi-critères pondéré (rating, reviews, price, availability)
-- **Clustering** : KMeans, DBSCAN, clustering hiérarchique (dans `ClusteringEngine`)
-- **Classification** : Random Forest, XGBoost (dans `ClassificationEngine`)
-- **Règles d'association** : Apriori, métriques support/confidence/lift (dans `AssociationEngine`)
-- **Évaluation** : Silhouette, Calinski-Harabasz, Davies-Bouldin, ROC-AUC, F1-score
-- ⚠️ **PCA** : Non implémenté (prévu mais pas encore codé)
+### Pages du dashboard
 
-### 3. Kubeflow Pipelines
-- **5 composants KFP** : scraping → preprocessing → training → top-k → LLM summary
-- **761 lignes** de pipeline défini avec `@component` decorators
-- **Base image** : `datamining-ml-training:latest` (corrigé, était `ecommerce-kfp:latest` inexistant)
-- **Composant LLM** : DeepSeek/Groq (OpenAI/Anthropic retirés)
-- ⚠️ **Jamais exécuté** sur un vrai cluster Kubernetes/Kubeflow
-
-### 4. Dashboard BI (Streamlit)
-- KPIs : total produits, prix moyen, note moyenne
-- Graphiques : distribution des prix (Plotly), top catégories
-- Tableau Top-K interactif avec filtres
-- Mode démo + données scrapées réelles (74 produits WooCommerce)
-
-### 5. LLM (DeepSeek & Groq)
-- **Wrapper httpx** (pas de dépendance OpenAI/Anthropic)
-- Méthodes : `complete()`, `summarize()`, `extract_entities()`
-- **Auto-fallback** : DeepSeek → Groq si clé DeepSeek absente
-- Utilisé dans : MCP Server, pipeline KFP
-
-### 6. Serveur MCP (Model Context Protocol)
-- FastAPI avec endpoints : `/health`, `/ready`, `/tools`, `/resources`
-- **5 outils** exposés : scrape_shopify, scrape_woocommerce, analyze_top_k, generate_summary, list_resources
-- Authentification par API key
-- Logging des requêtes/réponses
-
-### 7. Scheduler
-- Jobs automatiques : scraping daily (3h), ML retrain weekly (dimanche 4h), health check (5min)
-- ⚠️ Ne tourne qu'avec le profil `production`
-
-### 8. Prometheus Metrics
-- Métriques : scrape_requests_total, scrape_duration_seconds, agent_tasks_total
-- ⚠️ Service avec profil `monitoring` seulement
+| Page | Fonction |
+|---|---|
+| **📊 Vue d'ensemble** | KPIs, scatter plot prix/note, répartition catégories |
+| **🏷️ Top Produits** | Classement avec filtres (catégorie, k, prix max) |
+| **📈 Analyses ML** | Clustering (PCA, KMeans, DBSCAN, RF), prévisions Prophet, tendances XGBoost |
+| **🏆 Concurrence** | Analyses concurrentielles via Groq (comparaison, émergents, stratégie) |
+| **⚙️ Infrastructure** | Lancement pipeline Kubeflow, endpoints MCP |
 
 ---
 
-## 🛠️ Technologies utilisées (dans le code)
+## 🔧 Commandes avancées
 
-| Domaine | Outils |
-|---------|--------|
-| Scraping | Selenium, Playwright, BeautifulSoup, aiohttp |
-| ML/DM | Scikit-learn, XGBoost, LightGBM, PyTorch (CPU) |
-| Pipelines | Kubeflow (kfp SDK), Docker |
-| BI | Streamlit, Plotly, Seaborn |
-| LLMs | DeepSeek, Groq (httpx) |
-| Infra | Docker Compose, PostgreSQL, Redis |
-| CI/CD | GitHub Actions (à configurer) |
+### Tests unitaires
+
+```bash
+# Tous les tests
+docker compose run --rm scraper python -m pytest tests/
+
+# Tests spécifiques aux agents A2A
+docker compose run --rm scraper python -m pytest tests/test_agents.py -v
+```
+
+### Pipeline Kubeflow
+
+```bash
+# Soumettre la pipeline depuis la machine hôte
+python scripts/run_kfp.py --host http://127.0.0.1:61567
+
+# Compiler seulement (sans soumettre)
+python scripts/run_kfp.py --compile-only
+```
+
+### Lancer le scraping sans Docker
+
+```bash
+# Depuis la racine du projet
+python -m src.scraping.main
+```
+
+### Exécuter le pipeline complet (scraping + ML + LLM)
+
+```bash
+python -m src
+```
+
+### Console Python dans un conteneur
+
+```bash
+docker exec -it ecommerce-scraper python
+```
+
+### Vérifier PostgreSQL
+
+```bash
+docker exec ecommerce-postgres psql -U ecommerce_user -d ecommerce_db -c "SELECT COUNT(*) FROM products;"
+```
+
+### Vérifier les modèles ML stockés
+
+```bash
+docker exec ecommerce-postgres psql -U ecommerce_user -d ecommerce_db -c "SELECT model_name, LENGTH(model_data) as size_bytes FROM kfp_models;"
+```
 
 ---
 
-## 📝 License
+## 🔍 Architecture des conteneurs
 
-Projet développé dans le cadre du cours de Data Mining & Machine Learning.
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                         Docker Compose                            │
+│                                                                  │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐        │
+│  │ Dashboard│  │  Scraper │  │ML-Training│  │MCP Server│        │
+│  │ :8501    │  │ (1 exec) │  │          │  │ :8000    │        │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘        │
+│       │              │              │              │             │
+│       └──────────────┼──────────────┼──────────────┘             │
+│                      ▼              ▼                            │
+│               ┌──────────┐  ┌──────────┐                        │
+│               │PostgreSQL│  │  Redis   │                        │
+│               │ :5432    │  │ :6379    │                        │
+│               └──────────┘  └──────────┘                        │
+│                                                                  │
+│  Profils optionnels :                                            │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐                      │
+│  │ Jupyter  │  │ pgAdmin  │  │Scheduler │                      │
+│  │ (dev)    │  │ (dev)    │  │(prod)    │                      │
+│  └──────────┘  └──────────┘  └──────────┘                      │
+└──────────────────────────────────────────────────────────────────┘
+                         │
+                         ▼
+               ┌──────────────────┐
+               │   Minikube       │
+               │   Kubeflow       │
+               │   :61567         │
+               └──────────────────┘
+```
+
+---
+
+## 🛠️ Modules
+
+| Module | Description | Technologie |
+|---|---|---|
+| **Scraping A2A** | Architecture multi-agents distribuée | Protocol, MessageBus (in-memory/Redis), 4 agents spécialisés |
+| **ML & Data Mining** | KMeans, DBSCAN, PCA, Random Forest, XGBoost, Apriori | Scikit-learn, XGBoost, mlxtend |
+| **Prévisions** | Tendance des prix par catégorie | Prophet (Meta), LinearRegression |
+| **LLM** | DeepSeek & Groq avec auto-fallback | httpx, Llama-3.3-70b |
+| **Analyse concurrentielle** | 3 analyses : comparaison, émergents, stratégie | Groq, LLMWrapper |
+| **Pipeline Kubeflow** | 6 composants en DAG | kfp SDK v2 |
+| **Dashboard BI** | 5 pages + assistant IA | Streamlit, Plotly |
+| **MCP Server** | API REST compatible MCP | FastAPI |
+| **Scheduler** | 3 jobs (daily, weekly, health) | APScheduler |
+| **Monitoring** | Métriques Prometheus | prometheus_client |
+
+---
+
+## 📁 Structure du projet
+
+```
+DATA MINING/
+├── .env                      # Variables d'environnement
+├── .env.example              # Modèle du .env
+├── Dockerfile                # Build multi-stage (8 stages)
+├── docker-compose.yml        # Orchestration (8 services)
+├── config/
+│   └── config.yaml           # Configuration complète
+├── data/
+│   ├── raw/products.json     # Produits scrapés (cache)
+│   └── models/               # Modèles ML sauvegardés
+├── src/
+│   ├── __main__.py           # Point d'entrée principal
+│   ├── scraping/             # Scraping A2A
+│   │   ├── main.py           # Point d'entrée scraper
+│   │   ├── agents/           # Architecture A2A (6 fichiers)
+│   │   ├── woocommerce_scraper.py
+│   │   ├── shopify_scraper.py
+│   │   ├── selenium_scraper.py
+│   │   ├── playwright_scraper.py
+│   │   └── storage.py        # PostgreSQL storage
+│   ├── data_analysis/        # ML & Data Mining
+│   │   ├── ml_models/        # KMeans, DBSCAN, RF, XGBoost, Apriori
+│   │   ├── trend_analyzer.py # Prophet, XGBoost Trending
+│   │   └── evaluation.py     # Métriques (silhouette, accuracy, ROC-AUC)
+│   ├── llm/                  # Module LLM
+│   │   ├── wrapper.py        # DeepSeek & Groq
+│   │   └── competitive_analysis.py  # Analyse concurrentielle
+│   ├── pipelines/kubeflow/
+│   │   └── pipeline.py       # 6 composants KFP
+│   ├── dashboard/
+│   │   └── app.py            # Dashboard Streamlit
+│   ├── mcp/
+│   │   └── server.py         # Serveur MCP FastAPI
+│   ├── scheduler/
+│   │   └── main.py           # Jobs périodiques
+│   └── monitoring/
+│       └── prometheus_exporter.py
+├── scripts/                  # Utilitaires
+│   ├── run_kfp.py            # Soumission pipeline KFP
+│   ├── setup_db.sql          # Schéma PostgreSQL
+│   └── test_*.py             # Scripts de test
+└── tests/
+    ├── test_agents.py        # 660 lignes de tests A2A
+    └── test_ml_models.py     # Tests ML
+```
+
+---
+
+## 🧪 Tests
+
+```bash
+# Lancer tous les tests
+docker compose run --rm scraper python -m pytest
+
+# Tests agents A2A (660 lignes)
+docker compose run --rm scraper python -m pytest tests/test_agents.py -v
+
+# Tests ML
+docker compose run --rm scraper python -m pytest tests/test_ml_models.py -v
+```
+
+---
+
+## ❓ Dépannage
+
+| Problème | Solution |
+|---|---|
+| **Port déjà utilisé** | Modifier le port dans `docker-compose.yml` (ex: `8501:8501` → `8502:8501`) |
+| **Scraper ne démarre pas** | Vérifier que PostgreSQL est healthy : `docker compose ps` |
+| **Dashboard sans données** | Lancer le scraping ou la pipeline KFP d'abord |
+| **Erreur de build pip** | Relancer le build : `docker compose build --no-cache scraper` |
+| **Pipeline KFP inaccessible** | Vérifier Minikube : `minikube status`, puis `kubectl get pods -n kubeflow` |
+| **GROQ_API_KEY manquante** | Ajouter la clé dans `.env` et redémarrer le dashboard |
+| **Conteneur en restart** | Voir les logs : `docker logs <nom_conteneur> --tail 50` |
+
+---
+
+## 📝 Licence
+
+Projet développé dans le cadre du cours de Data Mining & Machine Learning — Bac+5.

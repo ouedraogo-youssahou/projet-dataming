@@ -37,6 +37,8 @@ def submit_pipeline(host: str):
     # Build params with all secrets
     params = {
         "woo_url": os.getenv("WOOCOMMERCE_STORE_URL", "https://stethoscopic-revivably-jamey.ngrok-free.dev"),
+        "consumer_key": os.getenv("WOOCOMMERCE_CONSUMER_KEY", "ck_a554b0e6ad8e1e7ea9e8850acefa9525b6224e17"),
+        "consumer_secret": os.getenv("WOOCOMMERCE_CONSUMER_SECRET", "cs_7b19931e3375156b6eaa34fb1c6697956fdc8a65"),
         
         "targets": "[]",
     }

@@ -346,8 +346,7 @@ deploymentSpec:
         - -c
         - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
           \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
-          \ python3 -m pip install --quiet --no-warn-script-location 'pyyaml' 'aiohttp'\
-          \  &&  python3 -m pip install --quiet --no-warn-script-location 'kfp==2.16.1'\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.16.1'\
           \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
           $0\" \"$@\"\n"
         - sh
@@ -367,92 +366,39 @@ deploymentSpec:
           \ str = \"mathematics\",\n    woo_pass: str = \"succinct\",\n) -> NamedTuple(\n\
           \    \"ScrapingOutput\",\n    [\n        (\"status\", str),\n        (\"\
           total_products\", int),\n        (\"platforms\", str),\n    ],\n):\n   \
-          \ \"\"\"KFP Component: Scrape products from WooCommerce via ngrok URL.\"\
-          \"\"\n    import json\n    import logging\n    import os\n    import base64\n\
-          \    import asyncio\n    import random\n    from pathlib import Path\n \
-          \   from collections import namedtuple\n\n    logger = logging.getLogger(__name__)\n\
-          \    logging.basicConfig(level=logging.INFO)\n\n    # Priorit\xE9 : param\xE8\
-          tres \u2192 variables d'environnement \u2192 valeurs par d\xE9faut\n   \
-          \ if not woo_url:\n        woo_url = os.getenv(\"WOOCOMMERCE_STORE_URL\"\
-          , \"https://stethoscopic-revivably-jamey.ngrok-free.dev\")\n    if not consumer_key:\n\
-          \        consumer_key = os.getenv(\"WOOCOMMERCE_CONSUMER_KEY\", \"ck_a554b0e6ad8e1e7ea9e8850acefa9525b6224e17\"\
-          )\n    if not consumer_secret:\n        consumer_secret = os.getenv(\"WOOCOMMERCE_CONSUMER_SECRET\"\
-          , \"cs_7b19931e3375156b6eaa34fb1c6697956fdc8a65\")\n\n    all_products =\
-          \ []\n\n    if woo_url and consumer_key and consumer_secret:\n        logger.info(f\"\
-          Scraping WooCommerce via: {woo_url}\")\n        try:\n            import\
-          \ aiohttp\n\n            async def fetch_products():\n                api_url\
-          \ = f\"{woo_url.rstrip('/')}/wp-json/wc/v3/products\"\n                basic_token\
-          \ = base64.b64encode(f\"{woo_user}:{woo_pass}\".encode()).decode()\n   \
-          \             headers = {\"Authorization\": f\"Basic {basic_token}\"}\n\
-          \                page = 1\n                per_page = 100\n            \
-          \    products = []\n\n                async with aiohttp.ClientSession(headers=headers)\
-          \ as session:\n                    while page <= 50:\n                 \
-          \       params = {\n                            \"per_page\": per_page,\n\
-          \                            \"page\": page,\n                         \
-          \   \"consumer_key\": consumer_key,\n                            \"consumer_secret\"\
-          : consumer_secret,\n                        }\n                        async\
-          \ with session.get(\n                            api_url, params=params,\n\
-          \                            timeout=aiohttp.ClientTimeout(total=30),\n\
-          \                        ) as resp:\n                            if resp.status\
-          \ != 200:\n                                logger.error(f\"API returned\
-          \ {resp.status} at page {page}\")\n                                break\n\
-          \                            data = await resp.json()\n\n              \
-          \          if not isinstance(data, list) or len(data) == 0:\n          \
-          \                  break\n\n                        for product in data:\n\
-          \                            price = product.get(\"price\", \"0\")\n   \
-          \                         regular = product.get(\"regular_price\", \"0\"\
-          )\n                            sale = product.get(\"sale_price\", \"0\"\
-          )\n                            try:\n                                price_val\
-          \ = float(sale) if sale and sale != \"\" else float(regular) if regular\
-          \ and regular != \"\" else float(price)\n                            except\
-          \ ValueError:\n                                price_val = 0.0\n       \
-          \                     categories = product.get(\"categories\", [])\n   \
-          \                         category = categories[0].get(\"name\", \"\") if\
-          \ categories else \"\"\n                            images = product.get(\"\
-          images\", [])\n                            image_urls = [img.get(\"src\"\
-          ) for img in images if img.get(\"src\")]\n\n                           \
-          \ products.append({\n                                \"product_id\": str(product.get(\"\
-          id\", \"\")),\n                                \"name\": product.get(\"\
-          name\", \"\"),\n                                \"description\": product.get(\"\
-          description\", \"\"),\n                                \"category\": category,\n\
-          \                                \"price\": price_val,\n               \
-          \                 \"currency\": product.get(\"currency\", \"USD\"),\n  \
-          \                              \"availability\": bool(product.get(\"stock_status\"\
-          , \"instock\") == \"instock\" if product.get(\"stock_status\") else random.random()\
-          \ > 0.3),\n                                \"quantity\": product.get(\"\
-          stock_quantity\") if product.get(\"stock_quantity\") is not None else random.randint(0,\
-          \ 50),\n                                \"vendor\": product.get(\"vendor\"\
-          , \"\") or random.choice([\"Generic Brand\", \"TechCo\", \"HomeGoods\",\
-          \ \"FashionWear\", \"SportMax\"]),\n                                \"rating\"\
-          : round(random.uniform(0.5, 5.0), 1) if not product.get(\"average_rating\"\
-          ) or str(product.get(\"average_rating\")).strip() in (\"\", \"0\", \"0.0\"\
-          , \"0.00\") else float(product.get(\"average_rating\")),\n             \
-          \                   \"reviews_count\": random.randint(0, 200) if not product.get(\"\
-          review_count\") or str(product.get(\"review_count\")).strip() in (\"\",\
-          \ \"0\", \"0.0\", \"0.00\") else int(product.get(\"review_count\")),\n \
-          \                               \"images\": image_urls,\n              \
-          \                  \"tags\": [t.get(\"name\", \"\") for t in product.get(\"\
-          tags\", [])] or random.choice([\n                                    [\"\
-          gadget\", \"tech\"], [\"fashion\", \"apparel\"], [\"home\", \"decor\"],\
-          \ \n                                    [\"sports\", \"fitness\"], [\"beauty\"\
-          , \"care\"]\n                                ]),\n                     \
-          \       })\n\n                        logger.info(f\"Page {page}: {len(data)}\
-          \ products (total: {len(products)})\")\n                        page +=\
-          \ 1\n\n                return products\n\n            all_products = asyncio.run(fetch_products())\n\
-          \            logger.info(f\"Scraped {len(all_products)} products from WooCommerce\"\
-          )\n\n        except Exception as e:\n            logger.error(f\"Scraping\
-          \ failed: {e}\")\n\n    if not all_products:\n        logger.error(\"Scraping\
-          \ failed: no products found. Pipeline aborted.\")\n        raise RuntimeError(\"\
-          No products scraped from WooCommerce API\")\n\n    output_path = Path(output_data.path)\n\
+          \ \"\"\"KFP Component: Scrape products using WooCommerceScraper (agents\
+          \ A2A).\"\"\"\n    import json\n    import logging\n    import os\n    import\
+          \ asyncio\n    from pathlib import Path\n    from collections import namedtuple\n\
+          \n    logger = logging.getLogger(__name__)\n    logging.basicConfig(level=logging.INFO)\n\
+          \n    # Priorit\xE9 : param\xE8tres \u2192 variables d'environnement \u2192\
+          \ valeurs par d\xE9faut\n    if not woo_url:\n        woo_url = os.getenv(\"\
+          WOOCOMMERCE_STORE_URL\", \"\")\n    if not consumer_key:\n        consumer_key\
+          \ = os.getenv(\"WOOCOMMERCE_CONSUMER_KEY\", \"\")\n    if not consumer_secret:\n\
+          \        consumer_secret = os.getenv(\"WOOCOMMERCE_CONSUMER_SECRET\", \"\
+          \")\n\n    if not woo_url or not consumer_key or not consumer_secret:\n\
+          \        raise RuntimeError(\"Missing WooCommerce credentials (woo_url,\
+          \ consumer_key, consumer_secret)\")\n\n    logger.info(f\"Scraping WooCommerce\
+          \ via: {woo_url}\")\n\n    # Utiliser le WooCommerceScraper (m\xEAme classe\
+          \ que celle utilis\xE9e par WooCommerceAgent)\n    # Cela garantit que le\
+          \ scraping en pipeline utilise exactement la m\xEAme logique\n    # que\
+          \ les agents A2A du service scraper.\n    try:\n        from src.scraping.woocommerce_scraper\
+          \ import WooCommerceScraper\n        scraper = WooCommerceScraper({\n  \
+          \          \"consumer_key\": consumer_key,\n            \"consumer_secret\"\
+          : consumer_secret,\n            \"api_version\": \"wc/v3\",\n        })\n\
+          \        all_products = asyncio.run(scraper.scrape_all(woo_url, max_pages=50))\n\
+          \        logger.info(f\"Scraped {len(all_products)} products from WooCommerce\"\
+          )\n    except Exception as e:\n        logger.error(f\"Scraping failed:\
+          \ {e}\", exc_info=True)\n        raise RuntimeError(f\"Scraping failed:\
+          \ {e}\")\n\n    if not all_products:\n        raise RuntimeError(\"No products\
+          \ scraped from WooCommerce API\")\n\n    output_path = Path(output_data.path)\n\
           \    output_path.parent.mkdir(parents=True, exist_ok=True)\n    with open(output_path,\
           \ \"w\") as f:\n        json.dump(all_products, f, indent=2, default=str)\n\
           \n    output_data.metadata[\"num_products\"] = len(all_products)\n    output_data.metadata[\"\
           platforms\"] = json.dumps([\"woocommerce\"])\n\n    ScrapingOutput = namedtuple(\"\
           ScrapingOutput\", [\"status\", \"total_products\", \"platforms\"])\n   \
-          \ return ScrapingOutput(\n        status=\"completed\" if all_products else\
-          \ \"empty\",\n        total_products=len(all_products),\n        platforms=json.dumps([\"\
-          woocommerce\"]),\n    )\n\n"
-        image: python:3.11-slim
+          \ return ScrapingOutput(\n        status=\"completed\",\n        total_products=len(all_products),\n\
+          \        platforms=json.dumps([\"woocommerce\"]),\n    )\n\n"
+        image: datamining-scraper:latest
     exec-select-top-k-kfp:
       container:
         args:
@@ -601,11 +547,12 @@ deploymentSpec:
           Stored {stored} products in PostgreSQL\")\n\n            # 2. Stocker le\
           \ r\xE9sum\xE9 LLM\n            summary_path = Path(summary_data.path)\n\
           \            if summary_path.exists():\n                summary_text = summary_path.read_text().strip()\n\
-          \                if summary_text:\n                    await conn.execute(\"\
-          \"\"\n                        CREATE TABLE IF NOT EXISTS llm_summaries (\n\
-          \                            id SERIAL PRIMARY KEY,\n                  \
-          \          summary TEXT,\n                            source VARCHAR(50)\
-          \ DEFAULT 'kubeflow_pipeline',\n                            created_at TIMESTAMP\
+          \                if summary_text:\n                    # Cr\xE9er la table\
+          \ si elle n'existe pas\n                    await conn.execute(\"\"\"\n\
+          \                        CREATE TABLE IF NOT EXISTS llm_summaries (\n  \
+          \                          id SERIAL PRIMARY KEY,\n                    \
+          \        summary TEXT,\n                            source VARCHAR(50) DEFAULT\
+          \ 'kubeflow_pipeline',\n                            created_at TIMESTAMP\
           \ DEFAULT NOW()\n                        )\n                    \"\"\")\n\
           \                    await conn.execute(\n                        \"INSERT\
           \ INTO llm_summaries (summary, source) VALUES ($1, $2)\",\n            \
@@ -625,32 +572,35 @@ deploymentSpec:
           \ INTO model_metrics (metrics, source) VALUES ($1::jsonb, $2)\",\n     \
           \                   json.dumps(metrics), \"kubeflow_pipeline\",\n      \
           \              )\n                    logger.info(f\"Stored ML metrics in\
-          \ PostgreSQL: {metrics}\")\n\n                import joblib\n          \
-          \      import io\n                import base64\n                import\
-          \ numpy as np\n                from sklearn.preprocessing import StandardScaler\n\
-          \                from sklearn.cluster import KMeans, DBSCAN\n          \
-          \      from sklearn.ensemble import RandomForestClassifier\n\n         \
-          \       await conn.execute(\"\"\"\n                    CREATE TABLE IF NOT\
-          \ EXISTS kfp_models (\n                        id SERIAL PRIMARY KEY,\n\
-          \                        model_name VARCHAR(50) UNIQUE,\n              \
-          \          model_data TEXT,\n                        metrics JSONB,\n  \
-          \                      created_at TIMESTAMP DEFAULT NOW()\n            \
-          \        )\n                \"\"\")\n\n                scraped_path = Path(scraped_data.path)\n\
-          \                if scraped_path.exists():\n                    with open(scraped_path)\
-          \ as f:\n                        products = json.load(f)\n             \
-          \       if isinstance(products, list) and len(products) > 0:\n         \
-          \               X = np.array([[float(p.get('price') or 0), float(p.get('rating')\
-          \ or 0), float(p.get('reviews_count') or 0)] for p in products])\n     \
-          \                   Xs = StandardScaler().fit_transform(X)\n\n         \
-          \               kmeans = KMeans(n_clusters=5, random_state=42).fit(Xs)\n\
-          \                        buf = io.BytesIO()\n                        joblib.dump(kmeans,\
-          \ buf)\n                        b64 = base64.b64encode(buf.getvalue()).decode()\n\
-          \                        await conn.execute(\"INSERT INTO kfp_models (model_name,\
-          \ model_data, metrics) VALUES ($1, $2, $3::jsonb) ON CONFLICT (model_name)\
-          \ DO UPDATE SET model_data=EXCLUDED.model_data, metrics=EXCLUDED.metrics,\
-          \ created_at=NOW()\", \"kmeans\", b64, json.dumps(metrics))\n          \
-          \              logger.info(f\"Stored model 'kmeans' ({len(b64)} bytes)\"\
-          )\n\n                        dbscan = DBSCAN(eps=0.5, min_samples=5).fit(Xs)\n\
+          \ PostgreSQL: {metrics}\")\n\n                # 3b. Stocker les mod\xE8\
+          les ML entra\xEEn\xE9s \xE0 partir des donn\xE9es scrap\xE9es\n        \
+          \        import joblib\n                import io\n                import\
+          \ base64\n                import numpy as np\n                from sklearn.preprocessing\
+          \ import StandardScaler\n                from sklearn.cluster import KMeans,\
+          \ DBSCAN\n                from sklearn.ensemble import RandomForestClassifier\n\
+          \n                await conn.execute(\"\"\"\n                    CREATE\
+          \ TABLE IF NOT EXISTS kfp_models (\n                        id SERIAL PRIMARY\
+          \ KEY,\n                        model_name VARCHAR(50) UNIQUE,\n       \
+          \                 model_data TEXT,\n                        metrics JSONB,\n\
+          \                        created_at TIMESTAMP DEFAULT NOW()\n          \
+          \          )\n                \"\"\")\n\n                # Charger les donn\xE9\
+          es scrap\xE9es pour entra\xEEner les mod\xE8les\n                scraped_path\
+          \ = Path(scraped_data.path)\n                if scraped_path.exists():\n\
+          \                    with open(scraped_path) as f:\n                   \
+          \     products = json.load(f)\n                    if isinstance(products,\
+          \ list) and len(products) > 0:\n                        X = np.array([[float(p.get('price')\
+          \ or 0), float(p.get('rating') or 0), float(p.get('reviews_count') or 0)]\
+          \ for p in products])\n                        Xs = StandardScaler().fit_transform(X)\n\
+          \n                        # KMeans\n                        kmeans = KMeans(n_clusters=5,\
+          \ random_state=42).fit(Xs)\n                        buf = io.BytesIO()\n\
+          \                        joblib.dump(kmeans, buf)\n                    \
+          \    b64 = base64.b64encode(buf.getvalue()).decode()\n                 \
+          \       await conn.execute(\"INSERT INTO kfp_models (model_name, model_data,\
+          \ metrics) VALUES ($1, $2, $3::jsonb) ON CONFLICT (model_name) DO UPDATE\
+          \ SET model_data=EXCLUDED.model_data, metrics=EXCLUDED.metrics, created_at=NOW()\"\
+          , \"kmeans\", b64, json.dumps(metrics))\n                        logger.info(f\"\
+          Stored model 'kmeans' ({len(b64)} bytes)\")\n\n                        #\
+          \ DBSCAN\n                        dbscan = DBSCAN(eps=0.5, min_samples=5).fit(Xs)\n\
           \                        buf = io.BytesIO()\n                        joblib.dump(dbscan,\
           \ buf)\n                        b64 = base64.b64encode(buf.getvalue()).decode()\n\
           \                        await conn.execute(\"INSERT INTO kfp_models (model_name,\
@@ -658,8 +608,9 @@ deploymentSpec:
           \ DO UPDATE SET model_data=EXCLUDED.model_data, metrics=EXCLUDED.metrics,\
           \ created_at=NOW()\", \"dbscan\", b64, json.dumps(metrics))\n          \
           \              logger.info(f\"Stored model 'dbscan' ({len(b64)} bytes)\"\
-          )\n\n                        if len(set(y_binary := (X[:, 0] > np.median(X[:,\
-          \ 0])).astype(int))) > 1:\n                            rf = RandomForestClassifier(n_estimators=100,\
+          )\n\n                        # Random Forest\n                        if\
+          \ len(set(y_binary := (X[:, 0] > np.median(X[:, 0])).astype(int))) > 1:\n\
+          \                            rf = RandomForestClassifier(n_estimators=100,\
           \ random_state=42).fit(Xs, y_binary)\n                            buf =\
           \ io.BytesIO()\n                            joblib.dump(rf, buf)\n     \
           \                       b64 = base64.b64encode(buf.getvalue()).decode()\n\
@@ -668,27 +619,28 @@ deploymentSpec:
           \ (model_name) DO UPDATE SET model_data=EXCLUDED.model_data, metrics=EXCLUDED.metrics,\
           \ created_at=NOW()\", \"random_forest\", b64, json.dumps(metrics))\n   \
           \                         logger.info(f\"Stored model 'random_forest' ({len(b64)}\
-          \ bytes)\")\n\n            top_k_path = Path(top_k_data.path)\n        \
-          \    if top_k_path.exists():\n                await conn.execute(\"\"\"\n\
-          \                    CREATE TABLE IF NOT EXISTS top_k_results (\n      \
-          \                  id SERIAL PRIMARY KEY,\n                        results\
-          \ JSONB,\n                        source VARCHAR(50) DEFAULT 'kubeflow_pipeline',\n\
-          \                        created_at TIMESTAMP DEFAULT NOW()\n          \
-          \          )\n                \"\"\")\n                with open(top_k_path)\
-          \ as f:\n                    top_k = json.load(f)\n                await\
-          \ conn.execute(\n                    \"INSERT INTO top_k_results (results,\
-          \ source) VALUES ($1::jsonb, $2)\",\n                    json.dumps(top_k),\
-          \ \"kubeflow_pipeline\",\n                )\n                logger.info(f\"\
-          Stored Top-K ({len(top_k)} products) in PostgreSQL\")\n\n            await\
-          \ conn.close()\n\n        asyncio.run(store())\n\n    except Exception as\
-          \ e:\n        logger.error(f\"Failed to store to PostgreSQL: {e}\")\n  \
-          \      StorageOutput = namedtuple(\"StorageOutput\", [\"status\", \"products_stored\"\
-          , \"summary_stored\"])\n        return StorageOutput(status=f\"error: {e}\"\
-          , products_stored=products_stored, summary_stored=summary_stored)\n\n  \
-          \  StorageOutput = namedtuple(\"StorageOutput\", [\"status\", \"products_stored\"\
-          , \"summary_stored\"])\n    return StorageOutput(\n        status=\"completed\"\
-          \ if products_stored > 0 else \"empty\",\n        products_stored=products_stored,\n\
-          \        summary_stored=summary_stored,\n    )\n\n"
+          \ bytes)\")\n\n            # 4. Stocker le Top-K\n            top_k_path\
+          \ = Path(top_k_data.path)\n            if top_k_path.exists():\n       \
+          \         await conn.execute(\"\"\"\n                    CREATE TABLE IF\
+          \ NOT EXISTS top_k_results (\n                        id SERIAL PRIMARY\
+          \ KEY,\n                        results JSONB,\n                       \
+          \ source VARCHAR(50) DEFAULT 'kubeflow_pipeline',\n                    \
+          \    created_at TIMESTAMP DEFAULT NOW()\n                    )\n       \
+          \         \"\"\")\n                with open(top_k_path) as f:\n       \
+          \             top_k = json.load(f)\n                await conn.execute(\n\
+          \                    \"INSERT INTO top_k_results (results, source) VALUES\
+          \ ($1::jsonb, $2)\",\n                    json.dumps(top_k), \"kubeflow_pipeline\"\
+          ,\n                )\n                logger.info(f\"Stored Top-K ({len(top_k)}\
+          \ products) in PostgreSQL\")\n\n            await conn.close()\n\n     \
+          \   asyncio.run(store())\n\n    except Exception as e:\n        logger.error(f\"\
+          Failed to store to PostgreSQL: {e}\")\n        StorageOutput = namedtuple(\"\
+          StorageOutput\", [\"status\", \"products_stored\", \"summary_stored\"])\n\
+          \        return StorageOutput(status=f\"error: {e}\", products_stored=products_stored,\
+          \ summary_stored=summary_stored)\n\n    StorageOutput = namedtuple(\"StorageOutput\"\
+          , [\"status\", \"products_stored\", \"summary_stored\"])\n    return StorageOutput(\n\
+          \        status=\"completed\" if products_stored > 0 else \"empty\",\n \
+          \       products_stored=products_stored,\n        summary_stored=summary_stored,\n\
+          \    )\n\n"
         image: python:3.11-slim
     exec-train-models-kfp:
       container:

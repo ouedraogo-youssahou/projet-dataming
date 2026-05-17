@@ -1,57 +1,57 @@
-# Environnements virtuels
-venv/
-env/
-.venv/
+﻿# Ignore Git
+.git
+.gitignore
 
-# Fichiers de cache Python
+# Python
 __pycache__/
 *.py[cod]
-*$py.class
+*.class
 *.so
-
-# Distribution / build
-*.egg-info/
-dist/
+.Python
 build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Jupyter / IPython
-.ipynb_checkpoints
-*.ipynb_checkpoints/
-jupyter_notebook_config.json
-
-# Fichiers locaux et secrets
-.env
-.env.local
-.env.*.local
-*.key
-*.pem
-*.crt
-*.p12
-secrets/
-credentials.json
-
-# Système
-.DS_Store
-Thumbs.db
-*.swp
-*.swo
-*~
-
-# Logs
-*.log
-logs/
+# Virtual environments
+.venv
+venv/
+ENV/
+env/
 
 # IDE
-.vscode/
 .idea/
-*.iml
+.vscode/
+*.swp
+*.swo
 
-# Tests / couverture
-htmlcov/
-.coverage
-.pytest_cache/
+# Docker
+.dockerignore
 
-# Temporaires
-tmp/
-temp/
+# Data (on ne veut pas copier products.json dans les conteneurs)
+data/raw/products.json
+data/raw/
+
+# Scripts inutiles dans les conteneurs
+scripts/import_products_to_db.py
+scripts/test_*.py
+scripts/check_*.py
+scripts/local_test.py
+scripts/fix_*.py
+scripts/launch_agents.ps1
+scripts/run_tests.ps1
+
+# Logs et fichiers temporaires
+*.log
 *.tmp
