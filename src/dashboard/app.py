@@ -896,11 +896,7 @@ def main():
     pages = [
     (icon("bar-chart",13), "Vue d'ensemble", "overview"),
     (icon("tag",13), "Les Top-K produits", "topk"),
-    (
-        icon("trending-up",13),
-        "<span style='font-size:12px'>Analyses machine learning</span>",
-        "analysis"
-    ),
+    (icon("trending-up",13), "Machine Learning", "analysis"),
     (icon("award",13), "Analyse concurentielle", "competitive"),
     (icon("settings",13), "Orchestration", "infra"),
     ]
