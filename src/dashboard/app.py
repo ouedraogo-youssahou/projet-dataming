@@ -58,113 +58,79 @@ def icon(name, size=16, color="currentColor", cls=""):
 
 CSS = """
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap');
 
     :root {
-        --bg:        #0D0F14;
-        --bg-2:      #13151C;
-        --surface:   #1A1D27;
-        --surface-2: #20243180;
-        --border:    #2A2E3F;
-        --border-md: #363B52;
-        --ink-0:     #F0F2FF;
-        --ink-1:     #C8CDEE;
-        --ink-2:     #8B93BC;
-        --ink-3:     #535878;
-        --ink-4:     #2E3249;
-        --accent:    #00D4A1;
-        --accent-dk: #00A87E;
-        --accent-lt: #00D4A115;
-        --accent-gl: #00D4A108;
-        --indigo:    #6B7FFF;
-        --indigo-lt: #6B7FFF12;
-        --green:     #00D4A1;
-        --green-lt:  #00D4A115;
-        --red:       #FF5C7A;
-        --red-lt:    #FF5C7A15;
-        --yellow:    #FFB547;
-        --yellow-lt: #FFB54715;
-        --pink:      #D47BFF;
-        --pink-lt:   #D47BFF15;
-        --shadow-sm: 0 1px 4px rgba(0,0,0,0.4);
-        --shadow-md: 0 4px 16px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3);
-        --shadow-glow: 0 0 20px rgba(0,212,161,0.08);
+        --bg:        #F0F4FF;
+        --surface:   #FFFFFF;
+        --border:    #D6E0FF;
+        --border-md: #B8C8FF;
+        --ink-0:     #1E1B4B;
+        --ink-1:     #3730A3;
+        --ink-2:     #6366F1;
+        --ink-3:     #A5B4FC;
+        --ink-4:     #C7D2FE;
+        --accent:    #6366F1;
+        --accent-lt: #EEF2FF;
+        --green:     #059669;
+        --green-lt:  #D1FAE5;
+        --red:       #DC2626;
+        --red-lt:    #FEE2E2;
+        --yellow:    #D97706;
+        --yellow-lt: #FEF3C7;
+        --pink:      #DB2777;
+        --pink-lt:   #FCE7F3;
+        --shadow-sm: 0 1px 3px rgba(99,102,241,0.10), 0 1px 2px rgba(99,102,241,0.06);
+        --shadow-md: 0 4px 12px rgba(99,102,241,0.12), 0 2px 4px rgba(99,102,241,0.06);
         --r-sm: 8px;
         --r-md: 12px;
         --r-lg: 16px;
     }
 
-    * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
-    h1,h2,h3,h4,.pg-title,.stat-value,.app-header h1 { font-family: 'Syne', sans-serif !important; }
-    code, pre, .mono { font-family: 'JetBrains Mono', monospace; }
+    * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
+    code, pre, .mono { font-family: 'DM Mono', monospace; }
 
     /* ── App shell ── */
     .stApp { background: var(--bg) !important; }
-    .stApp::before {
-        content: '';
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background:
-            radial-gradient(ellipse 60% 40% at 80% 10%, rgba(0,212,161,0.04) 0%, transparent 60%),
-            radial-gradient(ellipse 50% 50% at 10% 80%, rgba(107,127,255,0.04) 0%, transparent 60%);
-        pointer-events: none; z-index: 0;
-    }
-    section[data-testid="stSidebar"] {
-        background: var(--bg-2) !important;
-        border-right: 1px solid var(--border) !important;
-    }
-    .main .block-container {
-        padding: 0 1.5rem 2rem !important;
-        max-width: 980px !important;
-        position: relative; z-index: 1;
-    }
+    section[data-testid="stSidebar"] { background: var(--surface) !important; border-right: 2px solid var(--border) !important; }
+    .main .block-container { padding: 0 1.5rem 2rem !important; max-width: 980px !important; }
 
     /* ── Sidebar ── */
     section[data-testid="stSidebar"] .block-container { padding: 1.25rem 1rem !important; }
     .sidebar-logo {
-        display: flex; align-items: center; gap: 0.6rem;
-        padding: 0 0 1.1rem; margin-bottom: 1rem;
-        border-bottom: 1px solid var(--border);
+        display: flex; align-items: center; gap: 0.5rem;
+        padding: 0 0 1rem; margin-bottom: 1rem;
+        border-bottom: 2px solid var(--border);
     }
     .sidebar-logo .mark {
-        width: 34px; height: 34px;
-        background: linear-gradient(135deg, #00D4A1, #00A87E);
-        border-radius: 9px; display: flex; align-items: center; justify-content: center;
-        flex-shrink: 0; box-shadow: 0 0 12px rgba(0,212,161,0.3);
+        width: 32px; height: 32px;
+        background: linear-gradient(135deg, #6366F1, #8B5CF6);
+        border-radius: 8px; display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; font-size: 16px;
     }
-    .sidebar-logo h2 {
-        font-family: 'Syne', sans-serif !important;
-        font-size: 0.88rem; font-weight: 700; color: var(--ink-0); margin: 0; letter-spacing: -0.01em;
-    }
-    .sidebar-logo span { font-size: 0.68rem; color: var(--ink-3); display: block; font-weight: 400; }
+    .sidebar-logo h2 { font-size: 0.85rem; font-weight: 700; color: var(--ink-0); margin: 0; letter-spacing: -0.01em; }
+    .sidebar-logo span { font-size: 0.7rem; color: var(--ink-3); display: block; font-weight: 400; }
 
     .sidebar-section {
-        font-size: 0.62rem; font-weight: 600; color: var(--ink-3);
-        text-transform: uppercase; letter-spacing: 0.1em;
+        font-size: 0.65rem; font-weight: 700; color: var(--ink-2);
+        text-transform: uppercase; letter-spacing: 0.08em;
         margin: 1.25rem 0 0.6rem;
     }
 
     /* Chat messages */
     div[data-testid="chatMessage"] {
-        background: var(--surface) !important;
+        background: var(--accent-lt) !important;
         border: 1px solid var(--border) !important;
         border-radius: var(--r-md) !important;
         padding: 0.55rem 0.75rem !important;
         margin-bottom: 0.35rem;
         box-shadow: none !important;
     }
-    div[data-testid="chatMessage"] p {
-        font-size: 0.82rem !important;
-        color: var(--ink-1) !important;
-        line-height: 1.55 !important;
-    }
+    div[data-testid="chatMessage"] p { font-size: 0.82rem !important; color: var(--ink-0) !important; line-height: 1.55 !important; }
     div[data-testid="stChatInput"] {
         background: var(--surface) !important;
-        border: 1px solid var(--border-md) !important;
+        border: 2px solid var(--border-md) !important;
         border-radius: var(--r-md) !important;
-    }
-    div[data-testid="stChatInput"]:focus-within {
-        border-color: var(--accent) !important;
-        box-shadow: 0 0 0 3px rgba(0,212,161,0.1) !important;
     }
     div[data-testid="stChatInput"] textarea {
         background: transparent !important;
@@ -175,58 +141,51 @@ CSS = """
     /* ── Top header ── */
     .app-header {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 1.25rem 0 0.5rem; margin-bottom: 0.5rem;
+        padding: 1.25rem 0 0.5rem;
+        margin-bottom: 0.5rem;
     }
-    .app-header .wordmark { display: flex; align-items: center; gap: 0.65rem; }
+    .app-header .wordmark {
+        display: flex; align-items: center; gap: 0.6rem;
+    }
     .app-header .mark {
-        width: 38px; height: 38px;
-        background: linear-gradient(135deg, #00D4A1, #00A87E);
+        width: 36px; height: 36px;
+        background: linear-gradient(135deg, #6366F1, #8B5CF6);
         border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 0 16px rgba(0,212,161,0.3);
+        font-size: 18px;
     }
-    .app-header h1 {
-        font-size: 1.15rem; font-weight: 800; color: var(--ink-0); margin: 0; letter-spacing: -0.025em;
-    }
+    .app-header h1 { font-size: 1.1rem; font-weight: 700; color: var(--ink-0); margin: 0; letter-spacing: -0.02em; }
     .app-header .badge {
-        font-size: 0.68rem; font-weight: 600; padding: 0.22rem 0.6rem;
+        font-size: 0.7rem; font-weight: 600; padding: 0.25rem 0.65rem;
         border-radius: 20px; border: 1px solid var(--border);
-        color: var(--ink-2); background: var(--surface);
+        color: var(--ink-2); background: var(--accent-lt);
     }
     .app-header .badge.live {
-        color: var(--green); border-color: rgba(0,212,161,0.3);
+        color: var(--green); border-color: var(--green-lt);
         background: var(--green-lt);
     }
 
-    /* ── Buttons ── */
+    /* ── Nav tabs ── */
     .stButton button {
         border-radius: var(--r-sm) !important;
-        border: 1px solid var(--border-md) !important;
+        border: 2px solid var(--border) !important;
         background: var(--surface) !important;
         color: var(--ink-2) !important;
-        font-family: 'Inter', sans-serif !important;
-        font-size: 0.8rem !important;
-        font-weight: 500 !important;
+        font-size: 0.82rem !important;
+        font-weight: 600 !important;
         padding: 0.5rem 1rem !important;
         transition: all 0.15s ease !important;
     }
     .stButton button:hover {
         border-color: var(--accent) !important;
         color: var(--accent) !important;
-        background: var(--accent-gl) !important;
-        box-shadow: 0 0 12px rgba(0,212,161,0.1) !important;
+        background: var(--accent-lt) !important;
     }
     .stButton button[kind="primary"] {
-        color: #0D0F14 !important;
-        background: linear-gradient(135deg, #00D4A1, #00B88A) !important;
+        color: #FFFFFF !important;
+        background: linear-gradient(135deg, #6366F1, #8B5CF6) !important;
         border-color: transparent !important;
-        font-weight: 600 !important;
-        box-shadow: 0 2px 12px rgba(0,212,161,0.3) !important;
-    }
-    .stButton button[kind="primary"]:hover {
-        color: #0D0F14 !important;
-        background: linear-gradient(135deg, #00E0AC, #00C495) !important;
-        box-shadow: 0 4px 20px rgba(0,212,161,0.4) !important;
-        transform: translateY(-1px) !important;
+        font-weight: 700 !important;
+        box-shadow: 0 2px 8px rgba(99,102,241,0.35) !important;
     }
     .stButton button[kind="secondary"] {
         color: var(--ink-2) !important;
@@ -235,12 +194,8 @@ CSS = """
     }
 
     /* ── Page title ── */
-    .pg-title {
-        font-family: 'Syne', sans-serif !important;
-        font-size: 1.4rem; font-weight: 800; color: var(--ink-0);
-        margin: 0 0 0.15rem; letter-spacing: -0.03em;
-    }
-    .pg-sub { color: var(--ink-3); font-size: 0.78rem; margin-bottom: 1.25rem; font-weight: 400; }
+    .pg-title { font-size: 1.35rem; font-weight: 800; color: var(--ink-0); margin: 0 0 0.15rem; letter-spacing: -0.025em; }
+    .pg-sub { color: var(--ink-3); font-size: 0.8rem; margin-bottom: 1.25rem; font-weight: 400; }
 
     /* ── Stat cards ── */
     .stats-grid {
@@ -248,143 +203,117 @@ CSS = """
         gap: 0.75rem; margin-bottom: 1rem;
     }
     .stat-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--r-lg); padding: 1.1rem 1.15rem;
+        background: var(--surface); border: 2px solid var(--border);
+        border-radius: var(--r-lg); padding: 1rem 1.1rem;
         box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
-        transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    .stat-card:hover {
-        border-color: var(--border-md);
-        box-shadow: var(--shadow-md);
     }
     .stat-card::before {
         content: ''; position: absolute; top: 0; left: 0; right: 0;
-        height: 2px; background: var(--border);
+        height: 3px; background: var(--border-md);
     }
-    .stat-card.accent::before { background: linear-gradient(90deg, #00D4A1, #00B88A); }
+    .stat-card.accent::before { background: linear-gradient(90deg, #6366F1, #8B5CF6); }
     .stat-card.green::before  { background: var(--green); }
     .stat-card.yellow::before { background: var(--yellow); }
     .stat-card.pink::before   { background: var(--pink); }
-    .stat-card.accent { box-shadow: var(--shadow-glow); }
     .stat-icon {
         width: 32px; height: 32px; border-radius: var(--r-sm);
-        background: var(--accent-lt); border: 1px solid rgba(0,212,161,0.2);
+        background: var(--accent-lt); border: 1px solid var(--border);
         display: flex; align-items: center; justify-content: center;
-        margin-bottom: 0.7rem;
+        margin-bottom: 0.6rem; font-size: 16px;
     }
-    .stat-label {
-        font-size: 0.62rem; font-weight: 600; color: var(--ink-3);
-        text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.1rem;
-    }
-    .stat-value {
-        font-size: 1.55rem; font-weight: 800; color: var(--ink-0);
-        letter-spacing: -0.035em; line-height: 1;
-    }
-    .stat-foot { font-size: 0.65rem; color: var(--ink-3); margin-top: 0.3rem; }
+    .stat-label { font-size: 0.65rem; font-weight: 700; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.1rem; }
+    .stat-value { font-size: 1.5rem; font-weight: 800; color: var(--ink-0); letter-spacing: -0.03em; line-height: 1; }
+    .stat-foot { font-size: 0.67rem; color: var(--ink-3); margin-top: 0.25rem; }
 
     /* ── Data cards ── */
     .data-card {
-        background: var(--surface); border: 1px solid var(--border);
+        background: var(--surface); border: 2px solid var(--border);
         border-radius: var(--r-md); padding: 1rem 1.1rem;
         margin-bottom: 0.65rem; box-shadow: var(--shadow-sm);
     }
-    .data-card-label {
-        font-size: 0.6rem; font-weight: 600; color: var(--ink-3);
-        text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.3rem;
-    }
+    .data-card-label { font-size: 0.62rem; font-weight: 700; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.25rem; }
     .data-card-header {
-        font-family: 'Syne', sans-serif !important;
         font-size: 0.78rem; font-weight: 700; color: var(--ink-1);
-        margin-bottom: 0.5rem; padding-bottom: 0.5rem;
-        border-bottom: 1px solid var(--border);
+        margin-bottom: 0.5rem; padding-bottom: 0.45rem;
+        border-bottom: 2px solid var(--border);
         display: flex; align-items: center; gap: 0.4rem;
     }
 
     /* ── Progress bar ── */
-    .prog-wrap { display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.9rem; }
-    .prog-label { color: var(--ink-1); font-size: 0.74rem; white-space: nowrap; font-weight: 500; }
-    .prog-track {
-        flex: 1; background: var(--surface-2); border-radius: 20px;
-        height: 5px; overflow: hidden; border: 1px solid var(--border);
-    }
-    .prog-fill {
-        height: 100%; border-radius: 20px;
-        background: linear-gradient(90deg, #00D4A1, #00B88A);
-        box-shadow: 0 0 8px rgba(0,212,161,0.4);
-        transition: width 0.5s ease;
-    }
-    .prog-val { font-weight: 700; font-size: 0.76rem; color: var(--accent); white-space: nowrap; }
+    .prog-wrap { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.9rem; }
+    .prog-label { color: var(--ink-1); font-size: 0.75rem; white-space: nowrap; font-weight: 600; }
+    .prog-track { flex: 1; background: var(--bg); border-radius: 20px; height: 6px; overflow: hidden; border: 1px solid var(--border); }
+    .prog-fill { height: 100%; border-radius: 20px; background: linear-gradient(90deg, #6366F1, #8B5CF6); transition: width 0.5s ease; }
+    .prog-val { font-weight: 700; font-size: 0.78rem; color: var(--accent); white-space: nowrap; }
 
     /* ── Table ── */
     div[data-testid="stDataFrame"] {
-        border: 1px solid var(--border) !important;
+        border: 2px solid var(--border) !important;
         border-radius: var(--r-md) !important;
-        overflow: hidden; box-shadow: var(--shadow-sm);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
     }
     div[data-testid="stDataFrame"] thead tr th {
-        background: var(--surface) !important; color: var(--ink-2) !important;
-        font-family: 'Inter', sans-serif !important;
-        font-weight: 600 !important; font-size: 0.63rem !important;
-        text-transform: uppercase; letter-spacing: 0.08em;
-        border-bottom: 1px solid var(--border) !important;
+        background: var(--accent-lt) !important; color: var(--ink-1) !important;
+        font-weight: 700 !important; font-size: 0.65rem !important;
+        text-transform: uppercase; letter-spacing: 0.06em;
+        border-bottom: 2px solid var(--border) !important;
         padding: 0.5rem 0.75rem !important;
     }
     div[data-testid="stDataFrame"] tbody tr td {
-        color: var(--ink-1) !important; font-size: 0.82rem !important;
+        color: var(--ink-0) !important; font-size: 0.82rem !important;
         border-bottom: 1px solid var(--border) !important;
         padding: 0.4rem 0.75rem !important;
-        background: var(--bg-2) !important;
-    }
-    div[data-testid="stDataFrame"] tbody tr:hover td {
         background: var(--surface) !important;
-        color: var(--ink-0) !important;
     }
+    div[data-testid="stDataFrame"] tbody tr:hover td { background: var(--accent-lt) !important; }
 
     /* ── Expanders ── */
     div[data-testid="stExpander"] {
-        border: 1px solid var(--border) !important;
+        border: 2px solid var(--border) !important;
         border-radius: var(--r-md) !important;
         margin-bottom: 0.5rem !important;
-        background: var(--surface); box-shadow: var(--shadow-sm); overflow: hidden;
+        background: var(--surface);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
     }
     div[data-testid="stExpander"] summary {
-        font-size: 0.83rem !important; font-weight: 600 !important;
-        color: var(--ink-1) !important; padding: 0.65rem 0.85rem !important;
-        background: var(--bg-2) !important;
+        font-size: 0.84rem !important; font-weight: 700 !important;
+        color: var(--ink-0) !important; padding: 0.65rem 0.85rem !important;
+        background: var(--accent-lt) !important;
     }
 
     /* ── Tabs ── */
     div[data-testid="stTabs"] {
-        border-bottom: 1px solid var(--border); margin-bottom: 1rem;
+        border-bottom: 2px solid var(--border);
+        margin-bottom: 1rem;
     }
     div[data-testid="stTabs"] button {
-        color: var(--ink-3) !important; font-weight: 500 !important;
-        font-size: 0.8rem !important; padding: 0.4rem 0.85rem !important;
+        color: var(--ink-3) !important; font-weight: 600 !important;
+        font-size: 0.8rem !important;
+        padding: 0.4rem 0.85rem !important;
         border-bottom: 2px solid transparent !important;
-        border-radius: 0 !important; background: transparent !important;
-        transition: color 0.15s !important;
+        border-radius: 0 !important;
+        background: transparent !important;
     }
-    div[data-testid="stTabs"] button:hover { color: var(--ink-1) !important; }
     div[data-testid="stTabs"] button[aria-selected="true"] {
         color: var(--accent) !important;
         border-bottom-color: var(--accent) !important;
-        font-weight: 600 !important;
+        font-weight: 700 !important;
     }
 
     /* ── Alerts ── */
     div.stAlert {
         border-radius: var(--r-md) !important;
-        border: 1px solid var(--border) !important;
-        background: var(--surface) !important;
-        font-size: 0.82rem !important; color: var(--ink-1) !important;
+        border: 2px solid var(--border) !important;
+        background: var(--accent-lt) !important;
+        font-size: 0.82rem !important;
     }
 
-    /* ── Selectbox & sliders ── */
-    div[data-testid="stSelectbox"] select,
-    div[data-testid="stSelectbox"] > div > div {
+    /* ── Selects & sliders ── */
+    div[data-testid="stSelectbox"] select, div[data-testid="stSelectbox"] > div > div {
         background: var(--surface) !important;
-        border: 1px solid var(--border) !important;
+        border: 2px solid var(--border) !important;
         border-radius: var(--r-sm) !important;
         color: var(--ink-0) !important;
         font-size: 0.82rem !important;
@@ -392,26 +321,17 @@ CSS = """
     div[data-testid="stSlider"] > div > div > div { background: var(--accent) !important; }
 
     /* ── Radio ── */
-    div[data-testid="stRadio"] label { font-size: 0.82rem !important; color: var(--ink-1) !important; }
+    div[data-testid="stRadio"] label { font-size: 0.82rem !important; color: var(--ink-0) !important; }
 
     /* ── HR ── */
     hr { border-color: var(--border) !important; margin: 0.75rem 0 !important; }
 
-    /* ── Metrics ── */
-    div[data-testid="stMetric"] {
-        background: var(--surface) !important;
-        border: 1px solid var(--border) !important;
-        border-radius: var(--r-md) !important;
-        padding: 0.75rem 1rem !important;
-    }
-    div[data-testid="stMetric"] label { color: var(--ink-3) !important; font-size: 0.7rem !important; }
-    div[data-testid="stMetric"] [data-testid="stMetricValue"] { color: var(--ink-0) !important; font-family: 'Syne', sans-serif !important; }
-
     /* ── Footer ── */
     .app-footer {
-        color: var(--ink-3); font-size: 0.65rem; text-align: center;
-        padding: 1.5rem 0 0.5rem; border-top: 1px solid var(--border);
-        margin-top: 2rem; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500;
+        color: var(--ink-3); font-size: 0.67rem; text-align: center;
+        padding: 1.5rem 0 0.5rem; border-top: 2px solid var(--border);
+        margin-top: 2rem; letter-spacing: 0.04em; text-transform: uppercase;
+        font-weight: 600;
     }
 
     /* Inline icon alignment */
@@ -422,63 +342,52 @@ CSS = """
     /* Trend badges */
     .trend-badge {
         display: inline-flex; align-items: center; gap: 0.25rem;
-        font-size: 0.68rem; font-weight: 600; padding: 0.18rem 0.5rem;
+        font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem;
         border-radius: 20px;
     }
-    .trend-up   { color: var(--green); background: var(--green-lt); border: 1px solid rgba(0,212,161,0.2); }
-    .trend-down { color: var(--red);   background: var(--red-lt);   border: 1px solid rgba(255,92,122,0.2); }
-    .trend-flat { color: var(--ink-2); background: var(--surface);  border: 1px solid var(--border); }
+    .trend-up   { color: var(--green); background: var(--green-lt); }
+    .trend-down { color: var(--red);   background: var(--red-lt); }
+    .trend-flat { color: var(--ink-2); background: var(--accent-lt); }
 
     /* Segment row */
     .seg-row {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 0.55rem 0.8rem; border-radius: var(--r-sm);
-        background: var(--bg-2); border: 1px solid var(--border);
-        margin-bottom: 0.35rem; transition: border-color 0.15s;
+        padding: 0.5rem 0.75rem; border-radius: var(--r-sm);
+        background: var(--accent-lt); border: 2px solid var(--border);
+        margin-bottom: 0.35rem;
     }
-    .seg-row:hover { border-color: var(--border-md); }
-    .seg-name { font-weight: 600; font-size: 0.82rem; color: var(--ink-0); }
-    .seg-meta { font-size: 0.68rem; color: var(--ink-3); margin-top: 0.05rem; }
-    .seg-score { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--accent); font-weight: 500; }
+    .seg-name { font-weight: 700; font-size: 0.82rem; color: var(--ink-0); }
+    .seg-meta { font-size: 0.7rem; color: var(--ink-3); margin-top: 0.05rem; }
+    .seg-score { font-family: 'DM Mono', monospace; font-size: 0.78rem; color: var(--accent); font-weight: 700; }
 
     /* MCP endpoint rows */
     .ep-row {
         display: flex; justify-content: space-between; align-items: center;
-        padding: 0.38rem 0; border-bottom: 1px solid var(--border);
+        padding: 0.35rem 0; border-bottom: 1px solid var(--border);
         font-size: 0.78rem;
     }
     .ep-row:last-child { border-bottom: none; }
-    .ep-path { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-size: 0.72rem; font-weight: 500; }
-    .ep-desc { color: var(--ink-3); font-size: 0.7rem; }
+    .ep-path { font-family: 'DM Mono', monospace; color: var(--accent); font-size: 0.74rem; font-weight: 600; }
+    .ep-desc { color: var(--ink-3); font-size: 0.72rem; }
 
     /* Pipeline status */
-    .pipe-steps { display: flex; align-items: center; gap: 0; margin: 0.75rem 0; }
+    .pipe-steps {
+        display: flex; align-items: center; gap: 0; margin: 0.75rem 0;
+    }
     .pipe-step {
         flex: 1; text-align: center; position: relative;
-        font-size: 0.68rem; color: var(--ink-3); font-weight: 500;
+        font-size: 0.7rem; color: var(--ink-2); font-weight: 600;
     }
     .pipe-step-dot {
         width: 10px; height: 10px; border-radius: 50%;
-        background: var(--border); margin: 0 auto 0.3rem; position: relative; z-index: 1;
+        background: var(--border-md); margin: 0 auto 0.3rem; position: relative; z-index: 1;
     }
-    .pipe-step-dot.done {
-        background: var(--accent);
-        box-shadow: 0 0 8px rgba(0,212,161,0.5);
-    }
+    .pipe-step-dot.done { background: linear-gradient(135deg, #6366F1, #8B5CF6); }
     .pipe-step::after {
         content: ''; position: absolute; top: 5px; left: 50%; right: -50%;
-        height: 1px; background: var(--border); z-index: 0;
+        height: 2px; background: var(--border-md); z-index: 0;
     }
     .pipe-step:last-child::after { display: none; }
-
-    /* Spinner */
-    div[data-testid="stSpinner"] { color: var(--accent) !important; }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--ink-3); }
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
@@ -702,7 +611,7 @@ def pg_ml(products):
                 models[mn]=asyncio.run(_ld())
             except: pass
 
-        mc=st.radio("Algorithme", ["PCA","KMeans","DBSCAN","RF"], horizontal=True, key="mc")
+        mc=st.radio("Algorithme", ["PCA","KMeans","DBSCAN","Random Forest"], horizontal=True, key="mc")
 
         if mc=="PCA":
             pca=PCA(n_components=2); Xp=pca.fit_transform(Xs); df['_x'],df['_y']=Xp[:,0],Xp[:,1]
@@ -720,7 +629,7 @@ def pg_ml(products):
             fig=px.scatter(df[l!=-1],x='price',y='rating',color='_cl',hover_name='name',
                            title="DBSCAN Clustering",color_discrete_sequence=PLOT_COLORS)
             st.plotly_chart(plot_layout(fig), use_container_width=True)
-        elif mc=="RF" and models.get('random_forest'):
+        elif mc=="Random Forest" and models.get('random_forest'):
             m=models['random_forest']; df['_cl']=m.predict(Xs).astype(str)
             fig=px.scatter(df,x='price',y='rating',color='_cl',hover_name='name',
                            title="Random Forest — Prédictions",color_discrete_sequence=PLOT_COLORS)
@@ -904,7 +813,7 @@ def pg_infra():
             with st.spinner("Exécution en cours…"):
                 try:
                     import subprocess
-                    h=os.getenv("KFP_HOST","http://host.docker.internal:61567")
+                    h=os.getenv("KFP_HOST","http://host.docker.internal:60736")
                     r=subprocess.run(["python","scripts/run_kfp.py","--host",h],
                                      capture_output=True,text=True,timeout=120,cwd="/app")
                     if r.returncode==0:
