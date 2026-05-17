@@ -857,6 +857,7 @@ def main():
     with st.sidebar:
         st.markdown(f'''
         <div class="sidebar-logo">
+            st.image("images/logo 1.jpg", use_container_width=True)
             <div class="mark">🗂️</div>
             <div>
                 <h2>Smart eCommerce</h2>
@@ -898,7 +899,7 @@ def main():
     (icon("tag",13), "Les Top-K produits", "topk"),
     (icon("trending-up",13), "Machine Learning", "analysis"),
     (icon("award",13), "Analyse concurentielle", "competitive"),
-    (icon("settings",13), "Orchestration", "infra"),
+    (icon("settings",13), "Orchestration MCP", "infra"),
     ]
 
     cols=st.columns(len(pages))
