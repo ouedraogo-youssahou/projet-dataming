@@ -325,17 +325,6 @@ docker compose run --rm scraper python -m pytest tests/test_ml_models.py -v
 
 ---
 
-## ❓ Dépannage
-
-| Problème | Solution |
-|---|---|
-| **Port déjà utilisé** | Modifier le port dans `docker-compose.yml` (ex: `8501:8501` → `8502:8501`) |
-| **Scraper ne démarre pas** | Vérifier que PostgreSQL est healthy : `docker compose ps` |
-| **Dashboard sans données** | Lancer le scraping ou la pipeline KFP d'abord |
-| **Erreur de build pip** | Relancer le build : `docker compose build --no-cache scraper` |
-| **Pipeline KFP inaccessible** | Vérifier Minikube : `minikube status`, puis `kubectl get pods -n kubeflow` |
-| **GROQ_API_KEY manquante** | Ajouter la clé dans `.env` et redémarrer le dashboard |
-| **Conteneur en restart** | Voir les logs : `docker logs <nom_conteneur> --tail 50` |
 
 ---
 
