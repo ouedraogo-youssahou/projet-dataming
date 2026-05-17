@@ -24,58 +24,64 @@ st.set_page_config(page_title="Smart eCommerce", page_icon="◈", layout="wide",
 # ─── SVG ICON LIBRARY ──────────────────────────────────────────
 
 def icon(name, size=16, color="currentColor", cls=""):
+    """Returns a simple emoji span instead of SVG — zero rendering issues."""
     icons = {
-        "bar-chart": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>',
-        "tag": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
-        "trending-up": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
-        "award": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>',
-        "settings": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
-        "message-square": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
-        "package": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
-        "dollar-sign": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
-        "star": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
-        "users": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
-        "grid": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
-        "check-circle": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
-        "play": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
-        "activity": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
-        "search": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
-        "send": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
-        "cpu": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>',
-        "wifi": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>',
-        "arrow-up": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>',
-        "arrow-down": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>',
-        "minus": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><line x1="5" y1="12" x2="19" y2="12"/></svg>',
-        "layers": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
-        "compass": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>',
+        "bar-chart":      "📊",
+        "tag":            "🏷️",
+        "trending-up":    "📈",
+        "award":          "🏆",
+        "settings":       "⚙️",
+        "message-square": "💬",
+        "package":        "📦",
+        "dollar-sign":    "💰",
+        "star":           "⭐",
+        "users":          "👥",
+        "grid":           "▦",
+        "check-circle":   "✅",
+        "play":           "▶️",
+        "activity":       "⚡",
+        "search":         "🔍",
+        "send":           "📨",
+        "cpu":            "🖥️",
+        "wifi":           "🌐",
+        "arrow-up":       "↑",
+        "arrow-down":     "↓",
+        "minus":          "—",
+        "layers":         "🗂️",
+        "compass":        "🧭",
     }
-    return icons.get(name, f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8"><circle cx="12" cy="12" r="10"/></svg>')
+    emoji = icons.get(name, "•")
+    return f'<span class="icon-emoji {cls}" style="font-size:{size}px;line-height:1;">{emoji}</span>'
 
 CSS = """
 <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap');
 
     :root {
-        --bg:        #F5F2EE;
-        --surface:   #FDFBF8;
-        --border:    #E8E3DB;
-        --border-md: #D8D1C6;
-        --ink-0:     #1A1714;
-        --ink-1:     #3D3830;
-        --ink-2:     #7A7168;
-        --ink-3:     #B5AFA6;
-        --ink-4:     #D8D1C6;
-        --brass:     #A67C52;
-        --brass-lt:  #F0E8DC;
-        --green:     #2D6A4F;
-        --green-lt:  #D8EDDF;
-        --red:       #9B2335;
-        --red-lt:    #F5DDE0;
-        --shadow-sm: 0 1px 3px rgba(26,23,20,0.07), 0 1px 2px rgba(26,23,20,0.04);
-        --shadow-md: 0 4px 12px rgba(26,23,20,0.08), 0 2px 4px rgba(26,23,20,0.04);
-        --r-sm: 6px;
-        --r-md: 10px;
-        --r-lg: 14px;
+        --bg:        #F0F4FF;
+        --surface:   #FFFFFF;
+        --border:    #D6E0FF;
+        --border-md: #B8C8FF;
+        --ink-0:     #1E1B4B;
+        --ink-1:     #3730A3;
+        --ink-2:     #6366F1;
+        --ink-3:     #A5B4FC;
+        --ink-4:     #C7D2FE;
+        --accent:    #6366F1;
+        --accent-lt: #EEF2FF;
+        --green:     #059669;
+        --green-lt:  #D1FAE5;
+        --red:       #DC2626;
+        --red-lt:    #FEE2E2;
+        --yellow:    #D97706;
+        --yellow-lt: #FEF3C7;
+        --pink:      #DB2777;
+        --pink-lt:   #FCE7F3;
+        --shadow-sm: 0 1px 3px rgba(99,102,241,0.10), 0 1px 2px rgba(99,102,241,0.06);
+        --shadow-md: 0 4px 12px rgba(99,102,241,0.12), 0 2px 4px rgba(99,102,241,0.06);
+        --r-sm: 8px;
+        --r-md: 12px;
+        --r-lg: 16px;
     }
 
     * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
@@ -83,7 +89,7 @@ CSS = """
 
     /* ── App shell ── */
     .stApp { background: var(--bg) !important; }
-    section[data-testid="stSidebar"] { background: var(--surface) !important; border-right: 1px solid var(--border) !important; }
+    section[data-testid="stSidebar"] { background: var(--surface) !important; border-right: 2px solid var(--border) !important; }
     .main .block-container { padding: 0 1.5rem 2rem !important; max-width: 980px !important; }
 
     /* ── Sidebar ── */
@@ -91,41 +97,42 @@ CSS = """
     .sidebar-logo {
         display: flex; align-items: center; gap: 0.5rem;
         padding: 0 0 1rem; margin-bottom: 1rem;
-        border-bottom: 1px solid var(--border);
+        border-bottom: 2px solid var(--border);
     }
     .sidebar-logo .mark {
-        width: 28px; height: 28px; background: var(--ink-0);
-        border-radius: 6px; display: flex; align-items: center; justify-content: center;
-        flex-shrink: 0;
+        width: 32px; height: 32px;
+        background: linear-gradient(135deg, #6366F1, #8B5CF6);
+        border-radius: 8px; display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; font-size: 16px;
     }
-    .sidebar-logo h2 { font-size: 0.82rem; font-weight: 600; color: var(--ink-0); margin: 0; letter-spacing: -0.01em; }
-    .sidebar-logo span { font-size: 0.68rem; color: var(--ink-3); display: block; font-weight: 400; }
+    .sidebar-logo h2 { font-size: 0.85rem; font-weight: 700; color: var(--ink-0); margin: 0; letter-spacing: -0.01em; }
+    .sidebar-logo span { font-size: 0.7rem; color: var(--ink-3); display: block; font-weight: 400; }
 
     .sidebar-section {
-        font-size: 0.62rem; font-weight: 600; color: var(--ink-3);
+        font-size: 0.65rem; font-weight: 700; color: var(--ink-2);
         text-transform: uppercase; letter-spacing: 0.08em;
         margin: 1.25rem 0 0.6rem;
     }
 
     /* Chat messages */
     div[data-testid="chatMessage"] {
-        background: var(--surface) !important;
+        background: var(--accent-lt) !important;
         border: 1px solid var(--border) !important;
         border-radius: var(--r-md) !important;
         padding: 0.55rem 0.75rem !important;
         margin-bottom: 0.35rem;
         box-shadow: none !important;
     }
-    div[data-testid="chatMessage"] p { font-size: 0.8rem !important; color: var(--ink-1) !important; line-height: 1.55 !important; }
+    div[data-testid="chatMessage"] p { font-size: 0.82rem !important; color: var(--ink-0) !important; line-height: 1.55 !important; }
     div[data-testid="stChatInput"] {
         background: var(--surface) !important;
-        border: 1px solid var(--border-md) !important;
+        border: 2px solid var(--border-md) !important;
         border-radius: var(--r-md) !important;
     }
     div[data-testid="stChatInput"] textarea {
         background: transparent !important;
         color: var(--ink-0) !important;
-        font-size: 0.8rem !important;
+        font-size: 0.82rem !important;
     }
 
     /* ── Top header ── */
@@ -138,14 +145,16 @@ CSS = """
         display: flex; align-items: center; gap: 0.6rem;
     }
     .app-header .mark {
-        width: 32px; height: 32px; background: var(--ink-0);
+        width: 36px; height: 36px;
+        background: linear-gradient(135deg, #6366F1, #8B5CF6);
         border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center;
+        font-size: 18px;
     }
-    .app-header h1 { font-size: 1.05rem; font-weight: 600; color: var(--ink-0); margin: 0; letter-spacing: -0.02em; }
+    .app-header h1 { font-size: 1.1rem; font-weight: 700; color: var(--ink-0); margin: 0; letter-spacing: -0.02em; }
     .app-header .badge {
-        font-size: 0.68rem; font-weight: 500; padding: 0.2rem 0.55rem;
+        font-size: 0.7rem; font-weight: 600; padding: 0.25rem 0.65rem;
         border-radius: 20px; border: 1px solid var(--border);
-        color: var(--ink-2); background: var(--surface);
+        color: var(--ink-2); background: var(--accent-lt);
     }
     .app-header .badge.live {
         color: var(--green); border-color: var(--green-lt);
@@ -153,114 +162,112 @@ CSS = """
     }
 
     /* ── Nav tabs ── */
-    .nav-strip {
-        display: flex; gap: 0; margin-bottom: 1.5rem;
-        border-bottom: 1px solid var(--border);
-        padding: 0;
-    }
     .stButton button {
-        border-radius: 0 !important;
-        border: none !important;
-        background: transparent !important;
-        color: var(--ink-3) !important;
-        font-size: 0.8rem !important;
-        font-weight: 500 !important;
-        padding: 0.6rem 1.1rem !important;
-        border-bottom: 2px solid transparent !important;
-        margin-bottom: -1px !important;
+        border-radius: var(--r-sm) !important;
+        border: 2px solid var(--border) !important;
+        background: var(--surface) !important;
+        color: var(--ink-2) !important;
+        font-size: 0.82rem !important;
+        font-weight: 600 !important;
+        padding: 0.5rem 1rem !important;
         transition: all 0.15s ease !important;
-        display: inline-flex !important; align-items: center !important; gap: 0.35rem !important;
     }
     .stButton button:hover {
-        color: var(--ink-1) !important;
-        background: transparent !important;
+        border-color: var(--accent) !important;
+        color: var(--accent) !important;
+        background: var(--accent-lt) !important;
     }
     .stButton button[kind="primary"] {
-        color: var(--ink-0) !important;
-        border-bottom-color: var(--ink-0) !important;
-        font-weight: 600 !important;
-        background: transparent !important;
+        color: #FFFFFF !important;
+        background: linear-gradient(135deg, #6366F1, #8B5CF6) !important;
+        border-color: transparent !important;
+        font-weight: 700 !important;
+        box-shadow: 0 2px 8px rgba(99,102,241,0.35) !important;
     }
     .stButton button[kind="secondary"] {
-        color: var(--ink-3) !important;
-        background: transparent !important;
+        color: var(--ink-2) !important;
+        background: var(--surface) !important;
+        border-color: var(--border) !important;
     }
 
     /* ── Page title ── */
-    .pg-title { font-size: 1.3rem; font-weight: 700; color: var(--ink-0); margin: 0 0 0.15rem; letter-spacing: -0.025em; }
-    .pg-sub { color: var(--ink-3); font-size: 0.78rem; margin-bottom: 1.25rem; font-weight: 400; }
+    .pg-title { font-size: 1.35rem; font-weight: 800; color: var(--ink-0); margin: 0 0 0.15rem; letter-spacing: -0.025em; }
+    .pg-sub { color: var(--ink-3); font-size: 0.8rem; margin-bottom: 1.25rem; font-weight: 400; }
 
     /* ── Stat cards ── */
     .stats-grid {
         display: grid; grid-template-columns: repeat(4, 1fr);
-        gap: 0.65rem; margin-bottom: 1rem;
+        gap: 0.75rem; margin-bottom: 1rem;
     }
     .stat-card {
-        background: var(--surface); border: 1px solid var(--border);
-        border-radius: var(--r-md); padding: 0.9rem 1rem;
+        background: var(--surface); border: 2px solid var(--border);
+        border-radius: var(--r-lg); padding: 1rem 1.1rem;
         box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
     }
     .stat-card::before {
         content: ''; position: absolute; top: 0; left: 0; right: 0;
-        height: 2px; background: var(--ink-4);
+        height: 3px; background: var(--border-md);
     }
-    .stat-card.accent::before { background: var(--brass); }
+    .stat-card.accent::before { background: linear-gradient(90deg, #6366F1, #8B5CF6); }
+    .stat-card.green::before  { background: var(--green); }
+    .stat-card.yellow::before { background: var(--yellow); }
+    .stat-card.pink::before   { background: var(--pink); }
     .stat-icon {
-        width: 28px; height: 28px; border-radius: var(--r-sm);
-        background: var(--bg); border: 1px solid var(--border);
+        width: 32px; height: 32px; border-radius: var(--r-sm);
+        background: var(--accent-lt); border: 1px solid var(--border);
         display: flex; align-items: center; justify-content: center;
-        margin-bottom: 0.6rem;
+        margin-bottom: 0.6rem; font-size: 16px;
     }
-    .stat-label { font-size: 0.62rem; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.1rem; }
-    .stat-value { font-size: 1.45rem; font-weight: 700; color: var(--ink-0); letter-spacing: -0.03em; line-height: 1; }
-    .stat-foot { font-size: 0.65rem; color: var(--ink-3); margin-top: 0.2rem; }
+    .stat-label { font-size: 0.65rem; font-weight: 700; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.1rem; }
+    .stat-value { font-size: 1.5rem; font-weight: 800; color: var(--ink-0); letter-spacing: -0.03em; line-height: 1; }
+    .stat-foot { font-size: 0.67rem; color: var(--ink-3); margin-top: 0.25rem; }
 
     /* ── Data cards ── */
     .data-card {
-        background: var(--surface); border: 1px solid var(--border);
+        background: var(--surface); border: 2px solid var(--border);
         border-radius: var(--r-md); padding: 1rem 1.1rem;
         margin-bottom: 0.65rem; box-shadow: var(--shadow-sm);
     }
-    .data-card-label { font-size: 0.6rem; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.25rem; }
+    .data-card-label { font-size: 0.62rem; font-weight: 700; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.25rem; }
     .data-card-header {
-        font-size: 0.75rem; font-weight: 600; color: var(--ink-2);
+        font-size: 0.78rem; font-weight: 700; color: var(--ink-1);
         margin-bottom: 0.5rem; padding-bottom: 0.45rem;
-        border-bottom: 1px solid var(--border);
+        border-bottom: 2px solid var(--border);
         display: flex; align-items: center; gap: 0.4rem;
     }
 
     /* ── Progress bar ── */
     .prog-wrap { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.9rem; }
-    .prog-label { color: var(--ink-2); font-size: 0.72rem; white-space: nowrap; }
-    .prog-track { flex: 1; background: var(--bg); border-radius: 20px; height: 4px; overflow: hidden; border: 1px solid var(--border); }
-    .prog-fill { height: 100%; border-radius: 20px; background: var(--ink-0); transition: width 0.5s ease; }
-    .prog-val { font-weight: 600; font-size: 0.75rem; color: var(--ink-0); white-space: nowrap; }
+    .prog-label { color: var(--ink-1); font-size: 0.75rem; white-space: nowrap; font-weight: 600; }
+    .prog-track { flex: 1; background: var(--bg); border-radius: 20px; height: 6px; overflow: hidden; border: 1px solid var(--border); }
+    .prog-fill { height: 100%; border-radius: 20px; background: linear-gradient(90deg, #6366F1, #8B5CF6); transition: width 0.5s ease; }
+    .prog-val { font-weight: 700; font-size: 0.78rem; color: var(--accent); white-space: nowrap; }
 
     /* ── Table ── */
     div[data-testid="stDataFrame"] {
-        border: 1px solid var(--border) !important;
+        border: 2px solid var(--border) !important;
         border-radius: var(--r-md) !important;
         overflow: hidden;
         box-shadow: var(--shadow-sm);
     }
     div[data-testid="stDataFrame"] thead tr th {
-        background: var(--bg) !important; color: var(--ink-3) !important;
-        font-weight: 600 !important; font-size: 0.62rem !important;
+        background: var(--accent-lt) !important; color: var(--ink-1) !important;
+        font-weight: 700 !important; font-size: 0.65rem !important;
         text-transform: uppercase; letter-spacing: 0.06em;
-        border-bottom: 1px solid var(--border) !important;
-        padding: 0.45rem 0.75rem !important;
+        border-bottom: 2px solid var(--border) !important;
+        padding: 0.5rem 0.75rem !important;
     }
     div[data-testid="stDataFrame"] tbody tr td {
-        color: var(--ink-1) !important; font-size: 0.8rem !important;
+        color: var(--ink-0) !important; font-size: 0.82rem !important;
         border-bottom: 1px solid var(--border) !important;
-        padding: 0.35rem 0.75rem !important;
+        padding: 0.4rem 0.75rem !important;
         background: var(--surface) !important;
     }
-    div[data-testid="stDataFrame"] tbody tr:hover td { background: var(--bg) !important; }
+    div[data-testid="stDataFrame"] tbody tr:hover td { background: var(--accent-lt) !important; }
 
     /* ── Expanders ── */
     div[data-testid="stExpander"] {
-        border: 1px solid var(--border) !important;
+        border: 2px solid var(--border) !important;
         border-radius: var(--r-md) !important;
         margin-bottom: 0.5rem !important;
         background: var(--surface);
@@ -268,95 +275,97 @@ CSS = """
         overflow: hidden;
     }
     div[data-testid="stExpander"] summary {
-        font-size: 0.82rem !important; font-weight: 600 !important;
+        font-size: 0.84rem !important; font-weight: 700 !important;
         color: var(--ink-0) !important; padding: 0.65rem 0.85rem !important;
-        background: var(--surface) !important;
+        background: var(--accent-lt) !important;
     }
 
     /* ── Tabs ── */
     div[data-testid="stTabs"] {
-        border-bottom: 1px solid var(--border);
+        border-bottom: 2px solid var(--border);
         margin-bottom: 1rem;
     }
     div[data-testid="stTabs"] button {
-        color: var(--ink-3) !important; font-weight: 500 !important;
-        font-size: 0.78rem !important;
+        color: var(--ink-3) !important; font-weight: 600 !important;
+        font-size: 0.8rem !important;
         padding: 0.4rem 0.85rem !important;
         border-bottom: 2px solid transparent !important;
         border-radius: 0 !important;
         background: transparent !important;
     }
     div[data-testid="stTabs"] button[aria-selected="true"] {
-        color: var(--ink-0) !important;
-        border-bottom-color: var(--ink-0) !important;
-        font-weight: 600 !important;
+        color: var(--accent) !important;
+        border-bottom-color: var(--accent) !important;
+        font-weight: 700 !important;
     }
 
     /* ── Alerts ── */
     div.stAlert {
         border-radius: var(--r-md) !important;
-        border: 1px solid var(--border) !important;
-        background: var(--surface) !important;
-        font-size: 0.8rem !important;
+        border: 2px solid var(--border) !important;
+        background: var(--accent-lt) !important;
+        font-size: 0.82rem !important;
     }
 
     /* ── Selects & sliders ── */
     div[data-testid="stSelectbox"] select, div[data-testid="stSelectbox"] > div > div {
         background: var(--surface) !important;
-        border: 1px solid var(--border) !important;
+        border: 2px solid var(--border) !important;
         border-radius: var(--r-sm) !important;
         color: var(--ink-0) !important;
-        font-size: 0.8rem !important;
+        font-size: 0.82rem !important;
     }
-    div[data-testid="stSlider"] > div > div > div { background: var(--ink-0) !important; }
+    div[data-testid="stSlider"] > div > div > div { background: var(--accent) !important; }
 
     /* ── Radio ── */
-    div[data-testid="stRadio"] label { font-size: 0.8rem !important; color: var(--ink-1) !important; }
+    div[data-testid="stRadio"] label { font-size: 0.82rem !important; color: var(--ink-0) !important; }
 
     /* ── HR ── */
     hr { border-color: var(--border) !important; margin: 0.75rem 0 !important; }
 
     /* ── Footer ── */
     .app-footer {
-        color: var(--ink-4); font-size: 0.65rem; text-align: center;
-        padding: 1.5rem 0 0.5rem; border-top: 1px solid var(--border);
+        color: var(--ink-3); font-size: 0.67rem; text-align: center;
+        padding: 1.5rem 0 0.5rem; border-top: 2px solid var(--border);
         margin-top: 2rem; letter-spacing: 0.04em; text-transform: uppercase;
+        font-weight: 600;
     }
 
     /* Inline icon alignment */
+    .icon-emoji { display: inline-flex; align-items: center; vertical-align: middle; }
     .icon-inline { display: inline-flex; align-items: center; vertical-align: middle; }
     .with-icon { display: flex; align-items: center; gap: 0.4rem; }
 
     /* Trend badges */
     .trend-badge {
         display: inline-flex; align-items: center; gap: 0.25rem;
-        font-size: 0.68rem; font-weight: 600; padding: 0.18rem 0.45rem;
+        font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem;
         border-radius: 20px;
     }
     .trend-up   { color: var(--green); background: var(--green-lt); }
     .trend-down { color: var(--red);   background: var(--red-lt); }
-    .trend-flat { color: var(--ink-2); background: var(--bg); }
+    .trend-flat { color: var(--ink-2); background: var(--accent-lt); }
 
     /* Segment row */
     .seg-row {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 0.45rem 0.65rem; border-radius: var(--r-sm);
-        background: var(--bg); border: 1px solid var(--border);
-        margin-bottom: 0.3rem;
+        padding: 0.5rem 0.75rem; border-radius: var(--r-sm);
+        background: var(--accent-lt); border: 2px solid var(--border);
+        margin-bottom: 0.35rem;
     }
-    .seg-name { font-weight: 600; font-size: 0.8rem; color: var(--ink-0); }
-    .seg-meta { font-size: 0.68rem; color: var(--ink-3); margin-top: 0.05rem; }
-    .seg-score { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--brass); }
+    .seg-name { font-weight: 700; font-size: 0.82rem; color: var(--ink-0); }
+    .seg-meta { font-size: 0.7rem; color: var(--ink-3); margin-top: 0.05rem; }
+    .seg-score { font-family: 'DM Mono', monospace; font-size: 0.78rem; color: var(--accent); font-weight: 700; }
 
     /* MCP endpoint rows */
     .ep-row {
         display: flex; justify-content: space-between; align-items: center;
-        padding: 0.3rem 0; border-bottom: 1px solid var(--border);
-        font-size: 0.76rem;
+        padding: 0.35rem 0; border-bottom: 1px solid var(--border);
+        font-size: 0.78rem;
     }
     .ep-row:last-child { border-bottom: none; }
-    .ep-path { font-family: 'DM Mono', monospace; color: var(--ink-1); font-size: 0.72rem; }
-    .ep-desc { color: var(--ink-3); font-size: 0.7rem; }
+    .ep-path { font-family: 'DM Mono', monospace; color: var(--accent); font-size: 0.74rem; font-weight: 600; }
+    .ep-desc { color: var(--ink-3); font-size: 0.72rem; }
 
     /* Pipeline status */
     .pipe-steps {
@@ -364,16 +373,16 @@ CSS = """
     }
     .pipe-step {
         flex: 1; text-align: center; position: relative;
-        font-size: 0.68rem; color: var(--ink-2); font-weight: 500;
+        font-size: 0.7rem; color: var(--ink-2); font-weight: 600;
     }
     .pipe-step-dot {
-        width: 8px; height: 8px; border-radius: 50%;
+        width: 10px; height: 10px; border-radius: 50%;
         background: var(--border-md); margin: 0 auto 0.3rem; position: relative; z-index: 1;
     }
-    .pipe-step-dot.done { background: var(--ink-0); }
+    .pipe-step-dot.done { background: linear-gradient(135deg, #6366F1, #8B5CF6); }
     .pipe-step::after {
-        content: ''; position: absolute; top: 4px; left: 50%; right: -50%;
-        height: 1px; background: var(--border-md); z-index: 0;
+        content: ''; position: absolute; top: 5px; left: 50%; right: -50%;
+        height: 2px; background: var(--border-md); z-index: 0;
     }
     .pipe-step:last-child::after { display: none; }
 </style>
@@ -457,19 +466,19 @@ def ask(prompt, products=None):
 
 # ─── PLOT THEME ───────────────────────────────────────────────
 
-PLOT_COLORS = ["#1A1714","#A67C52","#7A7168","#2D6A4F","#B5AFA6","#9B2335","#D8D1C6","#3D3830"]
+PLOT_COLORS = ["#6366F1","#F59E0B","#10B981","#EF4444","#8B5CF6","#3B82F6","#EC4899","#14B8A6"]
 
 def plot_layout(fig, height=280, margin=None):
     m = margin or dict(l=8, r=8, t=36, b=16)
     fig.update_layout(
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='#7A7168', family='DM Sans'),
-        title_font=dict(color='#1A1714', size=13, family='DM Sans'),
+        font=dict(color='#6366F1', family='DM Sans'),
+        title_font=dict(color='#1E1B4B', size=13, family='DM Sans'),
         height=height, margin=m,
         legend=dict(bgcolor='rgba(0,0,0,0)', borderwidth=0, font=dict(size=11)),
-        xaxis=dict(gridcolor='#E8E3DB', linecolor='#D8D1C6', tickfont=dict(size=10)),
-        yaxis=dict(gridcolor='#E8E3DB', linecolor='#D8D1C6', tickfont=dict(size=10)),
+        xaxis=dict(gridcolor='#D6E0FF', linecolor='#B8C8FF', tickfont=dict(size=10)),
+        yaxis=dict(gridcolor='#D6E0FF', linecolor='#B8C8FF', tickfont=dict(size=10)),
     )
     return fig
 
@@ -682,7 +691,7 @@ def pg_ml(products):
             else: st.info("Aucun produit tendance identifié.")
         if tr:
             sdf=pd.DataFrame(tr[:8])
-            fig=px.bar(sdf,x='name',y='score',color='score',color_continuous_scale=[[0,'#D8D1C6'],[1,'#A67C52']],labels={'name':'','score':''})
+            fig=px.bar(sdf,x='name',y='score',color='score',color_continuous_scale=[[0,'#C7D2FE'],[1,'#6366F1']],labels={'name':'','score':''})
             fig.update_layout(coloraxis_showscale=False)
             st.plotly_chart(plot_layout(fig,height=180,margin=dict(l=5,r=5,t=10,b=30)), use_container_width=True)
 
@@ -744,7 +753,7 @@ def pg_competitive(products):
                     disp=edf[cols].rename(columns={"rank":"#","name":"Produit","category":"Catégorie","price":"Prix ($)","rating":"Note","reviews_count":"Avis","emergence_score":"Score"})
                     st.dataframe(disp, use_container_width=True, hide_index=True)
                     fig=px.bar(edf,x='name',y='emergence_score',color='emergence_score',
-                               color_continuous_scale=[[0,'#D8EDDF'],[1,'#2D6A4F']],
+                               color_continuous_scale=[[0,'#A5B4FC'],[1,'#6366F1']],
                                labels={'name':'','emergence_score':''})
                     fig.update_layout(coloraxis_showscale=False)
                     st.plotly_chart(plot_layout(fig,height=180,margin=dict(l=5,r=5,t=10,b=30)), use_container_width=True)
@@ -847,11 +856,9 @@ def main():
 
     # ── SIDEBAR ──
     with st.sidebar:
-        mark_svg = icon("layers", 14, "#FDFBF8")
-        msg_svg  = icon("message-square", 14, "#7A7168")
         st.markdown(f'''
         <div class="sidebar-logo">
-            <div class="mark">{mark_svg}</div>
+            <div class="mark">🗂️</div>
             <div>
                 <h2>Smart eCommerce</h2>
                 <span>Intelligence produit</span>
@@ -859,7 +866,7 @@ def main():
         </div>
         ''', unsafe_allow_html=True)
 
-        st.markdown(f'<div class="sidebar-section">{msg_svg} Assistant IA</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="sidebar-section">💬 Assistant IA</div>', unsafe_allow_html=True)
 
         if "ch" not in st.session_state: st.session_state.ch=[]
         for msg in st.session_state.ch[-6:]:
@@ -878,13 +885,12 @@ def main():
     # ── HEADER ──
     is_live = (source == "PostgreSQL")
     badge_cls = "badge live" if is_live else "badge"
-    badge_txt = f"{icon('check-circle',11,'#2D6A4F' if is_live else '#7A7168')} {len(products)} produits · {source}"
-    mark_svg = icon("layers", 15, "#FDFBF8")
+    badge_txt = f"{'✅' if is_live else '📦'} {len(products)} produits · {source}"
 
     st.markdown(f'''
     <div class="app-header">
         <div class="wordmark">
-            <div class="mark">{mark_svg}</div>
+            <div class="mark">🗂️</div>
             <h1>Smart eCommerce</h1>
         </div>
         <span class="{badge_cls}">{badge_txt}</span>
