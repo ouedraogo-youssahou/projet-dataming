@@ -1,6 +1,7 @@
 """
 Smart eCommerce Intelligence
-Design ultra-minimal, tout blanc, clean.
+Design: Refined luxury-minimal — warm off-white, deep slate, brass accents.
+Icons: Inline SVG (Lucide-style), no emoji.
 """
 
 import logging, json, os, asyncio
@@ -18,70 +19,363 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 logger = logging.getLogger(__name__)
-st.set_page_config(page_title="Smart eCommerce", page_icon="📊", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Smart eCommerce", page_icon="◈", layout="wide", initial_sidebar_state="expanded")
+
+# ─── SVG ICON LIBRARY ──────────────────────────────────────────
+
+def icon(name, size=16, color="currentColor", cls=""):
+    icons = {
+        "bar-chart": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>',
+        "tag": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+        "trending-up": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
+        "award": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>',
+        "settings": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+        "message-square": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+        "package": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
+        "dollar-sign": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+        "star": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+        "users": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+        "grid": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
+        "check-circle": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+        "play": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
+        "activity": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+        "search": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+        "send": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
+        "cpu": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>',
+        "wifi": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>',
+        "arrow-up": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>',
+        "arrow-down": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>',
+        "minus": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+        "layers": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
+        "compass": f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="{cls}"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>',
+    }
+    return icons.get(name, f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8"><circle cx="12" cy="12" r="10"/></svg>')
 
 CSS = """
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&display=swap');
-    * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
-    .stApp { background: #fff; }
-    .main .block-container { padding: 0.5rem 1rem !important; max-width: 900px !important; }
-    
-    /* Header */
-    .hdr { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0; margin-bottom: 0.75rem; }
-    .hdr h1 { font-size: 1rem; font-weight: 600; color: #222; margin: 0; }
-    .hdr .tag { font-size: 0.7rem; color: #999; }
-    .hdr .tag.g { color: #2E7D32; }
-    
-    /* Navigation pills */
-    .pill { display: flex; gap: 0.2rem; padding: 2px; background: #f5f5f5; border-radius: 8px; margin-bottom: 1rem; }
-    .pill button { flex: 1; text-align: center; padding: 0.35rem 0; font-size: 0.8rem; font-weight: 500; color: #aaa; border-radius: 7px; border: none; background: transparent; cursor: pointer; transition: all 0.12s; }
-    .pill button:hover { color: #555; }
-    .pill button.on { background: #fff; color: #111; box-shadow: 0 1px 2px rgba(0,0,0,0.04); font-weight: 600; }
-    
-    /* Titles */
-    .pg { font-size: 1.1rem; font-weight: 700; color: #111; margin: 0 0 0.05rem; }
-    .pg-s { color: #bbb; font-size: 0.8rem; margin-bottom: 1rem; }
-    
-    /* Stats grid */
-    .gr { display: grid; grid-template-columns: repeat(4,1fr); gap: 0.5rem; margin-bottom: 0.75rem; }
-    .bx { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 0.7rem 0.85rem; }
-    .bx-l { color: #bbb; font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-    .bx-v { color: #111; font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; margin: 1px 0; }
-    .bx-f { color: #ccc; font-size: 0.65rem; }
-    
-    /* Cards */
-    .cd { background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 0.9rem 1rem; margin-bottom: 0.6rem; }
-    .cd-l { color: #bbb; font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.1rem; }
-    .cd-h { font-size: 0.78rem; font-weight: 600; color: #555; margin-bottom: 0.35rem; padding-bottom: 0.35rem; border-bottom: 1px solid #f5f5f5; display: flex; align-items: center; gap: 0.3rem; }
-    
-    .pb { background: #f0f0f0; border-radius: 20px; height: 3px; overflow: hidden; margin: 3px 0; }
-    .pf { height: 100%; border-radius: 20px; background: #333; transition: width .4s; }
-    
-    /* Buttons */
-    .stButton button { border-radius: 8px !important; font-weight: 500 !important; font-size: 0.8rem !important; border: none !important; padding: 0.2rem 0.75rem !important; background: #222 !important; color: #fff !important; transition: all .12s !important; }
-    .stButton button:hover { background: #444 !important; }
-    .stButton button[kind="secondary"] { background: #f5f5f5 !important; color: #444 !important; }
-    .stButton button[kind="secondary"]:hover { background: #eee !important; }
-    
-    /* Table */
-    div[data-testid="stDataFrame"] thead tr th { background: #fafafa !important; color: #bbb !important; font-weight: 600 !important; font-size: 0.65rem !important; text-transform: uppercase; border-bottom: 1px solid #eee !important; padding: 0.3rem 0.6rem !important; }
-    div[data-testid="stDataFrame"] tbody tr td { color: #333 !important; font-size: 0.78rem !important; border-bottom: 1px solid #f5f5f5 !important; padding: 0.2rem 0.6rem !important; }
-    div[data-testid="stDataFrame"] tbody tr:hover { background: #fafafa !important; }
-    
-    /* Tabs */
-    div[data-testid="stTabs"] button { color: #ccc !important; font-weight: 500 !important; font-size: 0.78rem !important; padding: 0.15rem 0.65rem !important; border-bottom: 2px solid transparent !important; }
-    div[data-testid="stTabs"] button[aria-selected="true"] { color: #111 !important; border-bottom: 2px solid #111 !important; }
-    
-    /* Chat */
-    div[data-testid="chatMessage"] { background: #f8f8f8 !important; border: 1px solid #eee; border-radius: 8px !important; padding: 0.3rem 0.6rem !important; margin-bottom: 0.2rem; }
-    div[data-testid="chatInput"] textarea { background: #f8f8f8 !important; border: 1px solid #eee !important; border-radius: 8px !important; color: #333 !important; font-size: 0.78rem !important; }
-    
-    div.stAlert { border-radius: 8px !important; border: 1px solid #eee !important; background: #fafafa !important; }
-    div[data-testid="stExpander"] { border: 1px solid #eee !important; border-radius: 8px !important; margin-bottom: 0.35rem !important; background: #fff; }
-    
-    .ft { color: #ddd; font-size: 0.65rem; text-align: center; padding: 1rem 0 0.2rem; border-top: 1px solid #f0f0f0; margin-top: 1.25rem; }
-    hr { border-color: #f0f0f0 !important; margin: 0.5rem 0 !important; }
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap');
+
+    :root {
+        --bg:        #F5F2EE;
+        --surface:   #FDFBF8;
+        --border:    #E8E3DB;
+        --border-md: #D8D1C6;
+        --ink-0:     #1A1714;
+        --ink-1:     #3D3830;
+        --ink-2:     #7A7168;
+        --ink-3:     #B5AFA6;
+        --ink-4:     #D8D1C6;
+        --brass:     #A67C52;
+        --brass-lt:  #F0E8DC;
+        --green:     #2D6A4F;
+        --green-lt:  #D8EDDF;
+        --red:       #9B2335;
+        --red-lt:    #F5DDE0;
+        --shadow-sm: 0 1px 3px rgba(26,23,20,0.07), 0 1px 2px rgba(26,23,20,0.04);
+        --shadow-md: 0 4px 12px rgba(26,23,20,0.08), 0 2px 4px rgba(26,23,20,0.04);
+        --r-sm: 6px;
+        --r-md: 10px;
+        --r-lg: 14px;
+    }
+
+    * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
+    code, pre, .mono { font-family: 'DM Mono', monospace; }
+
+    /* ── App shell ── */
+    .stApp { background: var(--bg) !important; }
+    section[data-testid="stSidebar"] { background: var(--surface) !important; border-right: 1px solid var(--border) !important; }
+    .main .block-container { padding: 0 1.5rem 2rem !important; max-width: 980px !important; }
+
+    /* ── Sidebar ── */
+    section[data-testid="stSidebar"] .block-container { padding: 1.25rem 1rem !important; }
+    .sidebar-logo {
+        display: flex; align-items: center; gap: 0.5rem;
+        padding: 0 0 1rem; margin-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo .mark {
+        width: 28px; height: 28px; background: var(--ink-0);
+        border-radius: 6px; display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+    }
+    .sidebar-logo h2 { font-size: 0.82rem; font-weight: 600; color: var(--ink-0); margin: 0; letter-spacing: -0.01em; }
+    .sidebar-logo span { font-size: 0.68rem; color: var(--ink-3); display: block; font-weight: 400; }
+
+    .sidebar-section {
+        font-size: 0.62rem; font-weight: 600; color: var(--ink-3);
+        text-transform: uppercase; letter-spacing: 0.08em;
+        margin: 1.25rem 0 0.6rem;
+    }
+
+    /* Chat messages */
+    div[data-testid="chatMessage"] {
+        background: var(--surface) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: var(--r-md) !important;
+        padding: 0.55rem 0.75rem !important;
+        margin-bottom: 0.35rem;
+        box-shadow: none !important;
+    }
+    div[data-testid="chatMessage"] p { font-size: 0.8rem !important; color: var(--ink-1) !important; line-height: 1.55 !important; }
+    div[data-testid="stChatInput"] {
+        background: var(--surface) !important;
+        border: 1px solid var(--border-md) !important;
+        border-radius: var(--r-md) !important;
+    }
+    div[data-testid="stChatInput"] textarea {
+        background: transparent !important;
+        color: var(--ink-0) !important;
+        font-size: 0.8rem !important;
+    }
+
+    /* ── Top header ── */
+    .app-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 1.25rem 0 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    .app-header .wordmark {
+        display: flex; align-items: center; gap: 0.6rem;
+    }
+    .app-header .mark {
+        width: 32px; height: 32px; background: var(--ink-0);
+        border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center;
+    }
+    .app-header h1 { font-size: 1.05rem; font-weight: 600; color: var(--ink-0); margin: 0; letter-spacing: -0.02em; }
+    .app-header .badge {
+        font-size: 0.68rem; font-weight: 500; padding: 0.2rem 0.55rem;
+        border-radius: 20px; border: 1px solid var(--border);
+        color: var(--ink-2); background: var(--surface);
+    }
+    .app-header .badge.live {
+        color: var(--green); border-color: var(--green-lt);
+        background: var(--green-lt);
+    }
+
+    /* ── Nav tabs ── */
+    .nav-strip {
+        display: flex; gap: 0; margin-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
+        padding: 0;
+    }
+    .stButton button {
+        border-radius: 0 !important;
+        border: none !important;
+        background: transparent !important;
+        color: var(--ink-3) !important;
+        font-size: 0.8rem !important;
+        font-weight: 500 !important;
+        padding: 0.6rem 1.1rem !important;
+        border-bottom: 2px solid transparent !important;
+        margin-bottom: -1px !important;
+        transition: all 0.15s ease !important;
+        display: inline-flex !important; align-items: center !important; gap: 0.35rem !important;
+    }
+    .stButton button:hover {
+        color: var(--ink-1) !important;
+        background: transparent !important;
+    }
+    .stButton button[kind="primary"] {
+        color: var(--ink-0) !important;
+        border-bottom-color: var(--ink-0) !important;
+        font-weight: 600 !important;
+        background: transparent !important;
+    }
+    .stButton button[kind="secondary"] {
+        color: var(--ink-3) !important;
+        background: transparent !important;
+    }
+
+    /* ── Page title ── */
+    .pg-title { font-size: 1.3rem; font-weight: 700; color: var(--ink-0); margin: 0 0 0.15rem; letter-spacing: -0.025em; }
+    .pg-sub { color: var(--ink-3); font-size: 0.78rem; margin-bottom: 1.25rem; font-weight: 400; }
+
+    /* ── Stat cards ── */
+    .stats-grid {
+        display: grid; grid-template-columns: repeat(4, 1fr);
+        gap: 0.65rem; margin-bottom: 1rem;
+    }
+    .stat-card {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: var(--r-md); padding: 0.9rem 1rem;
+        box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
+    }
+    .stat-card::before {
+        content: ''; position: absolute; top: 0; left: 0; right: 0;
+        height: 2px; background: var(--ink-4);
+    }
+    .stat-card.accent::before { background: var(--brass); }
+    .stat-icon {
+        width: 28px; height: 28px; border-radius: var(--r-sm);
+        background: var(--bg); border: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: center;
+        margin-bottom: 0.6rem;
+    }
+    .stat-label { font-size: 0.62rem; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.1rem; }
+    .stat-value { font-size: 1.45rem; font-weight: 700; color: var(--ink-0); letter-spacing: -0.03em; line-height: 1; }
+    .stat-foot { font-size: 0.65rem; color: var(--ink-3); margin-top: 0.2rem; }
+
+    /* ── Data cards ── */
+    .data-card {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: var(--r-md); padding: 1rem 1.1rem;
+        margin-bottom: 0.65rem; box-shadow: var(--shadow-sm);
+    }
+    .data-card-label { font-size: 0.6rem; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.25rem; }
+    .data-card-header {
+        font-size: 0.75rem; font-weight: 600; color: var(--ink-2);
+        margin-bottom: 0.5rem; padding-bottom: 0.45rem;
+        border-bottom: 1px solid var(--border);
+        display: flex; align-items: center; gap: 0.4rem;
+    }
+
+    /* ── Progress bar ── */
+    .prog-wrap { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.9rem; }
+    .prog-label { color: var(--ink-2); font-size: 0.72rem; white-space: nowrap; }
+    .prog-track { flex: 1; background: var(--bg); border-radius: 20px; height: 4px; overflow: hidden; border: 1px solid var(--border); }
+    .prog-fill { height: 100%; border-radius: 20px; background: var(--ink-0); transition: width 0.5s ease; }
+    .prog-val { font-weight: 600; font-size: 0.75rem; color: var(--ink-0); white-space: nowrap; }
+
+    /* ── Table ── */
+    div[data-testid="stDataFrame"] {
+        border: 1px solid var(--border) !important;
+        border-radius: var(--r-md) !important;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+    }
+    div[data-testid="stDataFrame"] thead tr th {
+        background: var(--bg) !important; color: var(--ink-3) !important;
+        font-weight: 600 !important; font-size: 0.62rem !important;
+        text-transform: uppercase; letter-spacing: 0.06em;
+        border-bottom: 1px solid var(--border) !important;
+        padding: 0.45rem 0.75rem !important;
+    }
+    div[data-testid="stDataFrame"] tbody tr td {
+        color: var(--ink-1) !important; font-size: 0.8rem !important;
+        border-bottom: 1px solid var(--border) !important;
+        padding: 0.35rem 0.75rem !important;
+        background: var(--surface) !important;
+    }
+    div[data-testid="stDataFrame"] tbody tr:hover td { background: var(--bg) !important; }
+
+    /* ── Expanders ── */
+    div[data-testid="stExpander"] {
+        border: 1px solid var(--border) !important;
+        border-radius: var(--r-md) !important;
+        margin-bottom: 0.5rem !important;
+        background: var(--surface);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+    div[data-testid="stExpander"] summary {
+        font-size: 0.82rem !important; font-weight: 600 !important;
+        color: var(--ink-0) !important; padding: 0.65rem 0.85rem !important;
+        background: var(--surface) !important;
+    }
+
+    /* ── Tabs ── */
+    div[data-testid="stTabs"] {
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 1rem;
+    }
+    div[data-testid="stTabs"] button {
+        color: var(--ink-3) !important; font-weight: 500 !important;
+        font-size: 0.78rem !important;
+        padding: 0.4rem 0.85rem !important;
+        border-bottom: 2px solid transparent !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+    }
+    div[data-testid="stTabs"] button[aria-selected="true"] {
+        color: var(--ink-0) !important;
+        border-bottom-color: var(--ink-0) !important;
+        font-weight: 600 !important;
+    }
+
+    /* ── Alerts ── */
+    div.stAlert {
+        border-radius: var(--r-md) !important;
+        border: 1px solid var(--border) !important;
+        background: var(--surface) !important;
+        font-size: 0.8rem !important;
+    }
+
+    /* ── Selects & sliders ── */
+    div[data-testid="stSelectbox"] select, div[data-testid="stSelectbox"] > div > div {
+        background: var(--surface) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: var(--r-sm) !important;
+        color: var(--ink-0) !important;
+        font-size: 0.8rem !important;
+    }
+    div[data-testid="stSlider"] > div > div > div { background: var(--ink-0) !important; }
+
+    /* ── Radio ── */
+    div[data-testid="stRadio"] label { font-size: 0.8rem !important; color: var(--ink-1) !important; }
+
+    /* ── HR ── */
+    hr { border-color: var(--border) !important; margin: 0.75rem 0 !important; }
+
+    /* ── Footer ── */
+    .app-footer {
+        color: var(--ink-4); font-size: 0.65rem; text-align: center;
+        padding: 1.5rem 0 0.5rem; border-top: 1px solid var(--border);
+        margin-top: 2rem; letter-spacing: 0.04em; text-transform: uppercase;
+    }
+
+    /* Inline icon alignment */
+    .icon-inline { display: inline-flex; align-items: center; vertical-align: middle; }
+    .with-icon { display: flex; align-items: center; gap: 0.4rem; }
+
+    /* Trend badges */
+    .trend-badge {
+        display: inline-flex; align-items: center; gap: 0.25rem;
+        font-size: 0.68rem; font-weight: 600; padding: 0.18rem 0.45rem;
+        border-radius: 20px;
+    }
+    .trend-up   { color: var(--green); background: var(--green-lt); }
+    .trend-down { color: var(--red);   background: var(--red-lt); }
+    .trend-flat { color: var(--ink-2); background: var(--bg); }
+
+    /* Segment row */
+    .seg-row {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0.45rem 0.65rem; border-radius: var(--r-sm);
+        background: var(--bg); border: 1px solid var(--border);
+        margin-bottom: 0.3rem;
+    }
+    .seg-name { font-weight: 600; font-size: 0.8rem; color: var(--ink-0); }
+    .seg-meta { font-size: 0.68rem; color: var(--ink-3); margin-top: 0.05rem; }
+    .seg-score { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--brass); }
+
+    /* MCP endpoint rows */
+    .ep-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0.3rem 0; border-bottom: 1px solid var(--border);
+        font-size: 0.76rem;
+    }
+    .ep-row:last-child { border-bottom: none; }
+    .ep-path { font-family: 'DM Mono', monospace; color: var(--ink-1); font-size: 0.72rem; }
+    .ep-desc { color: var(--ink-3); font-size: 0.7rem; }
+
+    /* Pipeline status */
+    .pipe-steps {
+        display: flex; align-items: center; gap: 0; margin: 0.75rem 0;
+    }
+    .pipe-step {
+        flex: 1; text-align: center; position: relative;
+        font-size: 0.68rem; color: var(--ink-2); font-weight: 500;
+    }
+    .pipe-step-dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: var(--border-md); margin: 0 auto 0.3rem; position: relative; z-index: 1;
+    }
+    .pipe-step-dot.done { background: var(--ink-0); }
+    .pipe-step::after {
+        content: ''; position: absolute; top: 4px; left: 50%; right: -50%;
+        height: 1px; background: var(--border-md); z-index: 0;
+    }
+    .pipe-step:last-child::after { display: none; }
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
@@ -95,8 +389,7 @@ def load_products_from_db():
         async def f():
             c=await asyncpg.connect(host=h,port=5432,database="ecommerce_db",user=u,password=p)
             r=await c.fetch("SELECT * FROM products ORDER BY price DESC"); await c.close()
-            result = [_c(dict(x)) for x in r]
-            return result
+            return [_c(dict(x)) for x in r]
         return asyncio.run(f())
     except Exception as e:
         logger.warning(f"DB load error: {e}")
@@ -121,7 +414,6 @@ def _c(p):
     return p
 
 def load_products():
-    # Toujours charger depuis PostgreSQL (pas de cache)
     db=load_products_from_db()
     if db and len(db)>0: return db,"PostgreSQL"
     for sp in [Path("data/raw/products.json"),Path("/app/data/raw/products.json")]:
@@ -130,9 +422,13 @@ def load_products():
                 with open(sp) as f: d=json.load(f)
                 if isinstance(d,list) and len(d)>0: return d,sp.name
             except: pass
-    return [{"product_id":"1","name":"Wireless Earbuds","category":"Electronics","price":59,"rating":4.6,"reviews_count":1200,"availability":True},{"product_id":"2","name":"Fitness Tracker","category":"Sport","price":49,"rating":4.2,"reviews_count":340,"availability":True},{"product_id":"3","name":"LED Desk Lamp","category":"Home","price":29,"rating":4.8,"reviews_count":980,"availability":True}],"Sample"
+    return [
+        {"product_id":"1","name":"Wireless Earbuds","category":"Electronics","price":59,"rating":4.6,"reviews_count":1200,"availability":True},
+        {"product_id":"2","name":"Fitness Tracker","category":"Sport","price":49,"rating":4.2,"reviews_count":340,"availability":True},
+        {"product_id":"3","name":"LED Desk Lamp","category":"Home","price":29,"rating":4.8,"reviews_count":980,"availability":True}
+    ],"Sample"
 
-def topk(products,k=10,w=None):
+def topk(products, k=10, w=None):
     w=w or {"rating":0.3,"reviews_count":0.25,"price_competitiveness":0.2,"availability":0.15}
     df=pd.DataFrame(products)
     if df.empty: return pd.DataFrame()
@@ -148,70 +444,146 @@ def llm():
     from src.llm.wrapper import LLMWrapper
     return LLMWrapper(deepseek_key=os.getenv("DEEPSEEK_API_KEY"),groq_key=os.getenv("GROQ_API_KEY"))
 
-def ask(prompt,products=None):
+def ask(prompt, products=None):
     w=llm()
     if products and len(products)>0:
         ctx=f"Assistant eCommerce. {len(products)} produits.\n"+'\n'.join([f"- {p.get('name','?')} | {p.get('price',0):.0f}$" for p in products[:50]])+f"\n\nQuestion: {prompt}"
     else: ctx=f"Réponds: {prompt}"
     try: return w.complete(ctx,provider="groq",max_tokens=800)
     except RuntimeError as e:
-        if "No LLM provider" in str(e): return "⚠️ GROQ_API_KEY manquante"
+        if "No LLM provider" in str(e): return "GROQ_API_KEY manquante"
         raise
-    except: return "⚠️ Erreur"
+    except: return "Erreur lors de la requête"
+
+# ─── PLOT THEME ───────────────────────────────────────────────
+
+PLOT_COLORS = ["#1A1714","#A67C52","#7A7168","#2D6A4F","#B5AFA6","#9B2335","#D8D1C6","#3D3830"]
+
+def plot_layout(fig, height=280, margin=None):
+    m = margin or dict(l=8, r=8, t=36, b=16)
+    fig.update_layout(
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#7A7168', family='DM Sans'),
+        title_font=dict(color='#1A1714', size=13, family='DM Sans'),
+        height=height, margin=m,
+        legend=dict(bgcolor='rgba(0,0,0,0)', borderwidth=0, font=dict(size=11)),
+        xaxis=dict(gridcolor='#E8E3DB', linecolor='#D8D1C6', tickfont=dict(size=10)),
+        yaxis=dict(gridcolor='#E8E3DB', linecolor='#D8D1C6', tickfont=dict(size=10)),
+    )
+    return fig
 
 # ─── PAGES ────────────────────────────────────────────────────
 
-def pg_overview(products,src):
-    st.markdown('<div class="pg">👋 Bonjour</div>',unsafe_allow_html=True)
-    st.markdown(f'<div class="pg-s">{len(products)} produits · {src}</div>',unsafe_allow_html=True)
+def pg_overview(products, src):
+    st.markdown(f'<div class="pg-title">Vue d\'ensemble</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="pg-sub">{len(products)} produits indexés · Source : {src}</div>', unsafe_allow_html=True)
+
     df=pd.DataFrame(products)
     for c in ['price','rating','reviews_count']:
         if c in df.columns: df[c]=pd.to_numeric(df[c],errors='coerce').fillna(0)
-    ap=df['price'].mean(); ar=df['rating'].mean(); tr=int(df['reviews_count'].sum()); nc=df['category'].nunique() if 'category' in df.columns else 0
+
+    ap=df['price'].mean(); ar=df['rating'].mean()
+    tr=int(df['reviews_count'].sum()); nc=df['category'].nunique() if 'category' in df.columns else 0
     av=(df['availability'].sum()/len(df)*100) if 'availability' in df.columns and len(df)>0 else 0
-    st.markdown(f'<div class="gr"><div class="bx"><div class="bx-l">Produits</div><div class="bx-v">{len(df)}</div><div class="bx-f">{nc} catégories</div></div><div class="bx"><div class="bx-l">Prix moyen</div><div class="bx-v">{ap:.0f}$</div></div><div class="bx"><div class="bx-l">Note</div><div class="bx-v">{ar:.2f}</div></div><div class="bx"><div class="bx-l">Avis</div><div class="bx-v">{tr:,}</div></div></div>',unsafe_allow_html=True)
-    if av>0: st.markdown(f'<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem;"><span style="color:#bbb;font-size:0.7rem;">Disponibilité</span><div class="pb" style="flex:1;"><div class="pf" style="width:{av:.0f}%;"></div></div><span style="font-weight:600;font-size:0.78rem;">{av:.0f}%</span></div>',unsafe_allow_html=True)
-    c1,c2=st.columns(2)
+
+    pkg = icon("package", 14, "#7A7168")
+    dol = icon("dollar-sign", 14, "#7A7168")
+    star = icon("star", 14, "#7A7168")
+    usr = icon("users", 14, "#7A7168")
+
+    st.markdown(f'''
+    <div class="stats-grid">
+        <div class="stat-card accent">
+            <div class="stat-icon">{pkg}</div>
+            <div class="stat-label">Produits</div>
+            <div class="stat-value">{len(df)}</div>
+            <div class="stat-foot">{nc} catégories</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">{dol}</div>
+            <div class="stat-label">Prix moyen</div>
+            <div class="stat-value">{ap:.0f}<span style="font-size:0.8rem;font-weight:400;color:var(--ink-3);">$</span></div>
+            <div class="stat-foot">Médiane catalogue</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">{star}</div>
+            <div class="stat-label">Note moyenne</div>
+            <div class="stat-value">{ar:.2f}<span style="font-size:0.8rem;font-weight:400;color:var(--ink-3);">/5</span></div>
+            <div class="stat-foot">Toutes catégories</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">{usr}</div>
+            <div class="stat-label">Avis totaux</div>
+            <div class="stat-value">{tr:,}</div>
+            <div class="stat-foot">Cumulés</div>
+        </div>
+    </div>
+    ''', unsafe_allow_html=True)
+
+    if av > 0:
+        st.markdown(f'''
+        <div class="prog-wrap">
+            <span class="prog-label">{icon("check-circle", 13, "#7A7168")} Disponibilité</span>
+            <div class="prog-track"><div class="prog-fill" style="width:{av:.0f}%;"></div></div>
+            <span class="prog-val">{av:.0f}%</span>
+        </div>
+        ''', unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
     with c1:
-        fig=px.scatter(df,x='price',y='rating',color='category',size='reviews_count',hover_name='name',title="Prix / Note",color_discrete_sequence=px.colors.qualitative.Set2)
-        fig.update_layout(plot_bgcolor='rgba(0,0,0,0)',paper_bgcolor='rgba(0,0,0,0)',font_color='#bbb',title_font_color='#333',margin=dict(l=5,r=5,t=35,b=15),height=280)
-        st.plotly_chart(fig,use_container_width=True)
+        fig=px.scatter(df, x='price', y='rating', color='category', size='reviews_count',
+                       hover_name='name', title="Prix vs Note",
+                       color_discrete_sequence=PLOT_COLORS)
+        st.plotly_chart(plot_layout(fig), use_container_width=True)
     with c2:
         cc=df['category'].value_counts().reset_index(); cc.columns=['category','count']
-        fig=px.pie(cc,values='count',names='category',title="Catégories",color_discrete_sequence=px.colors.qualitative.Set2)
-        fig.update_traces(textposition='inside',textinfo='percent+label')
-        fig.update_layout(plot_bgcolor='rgba(0,0,0,0)',paper_bgcolor='rgba(0,0,0,0)',font_color='#bbb',title_font_color='#333',margin=dict(l=5,r=5,t=35,b=15),height=280)
-        st.plotly_chart(fig,use_container_width=True)
+        fig=px.pie(cc, values='count', names='category', title="Répartition catégories",
+                   color_discrete_sequence=PLOT_COLORS, hole=0.42)
+        fig.update_traces(textposition='inside', textinfo='percent', textfont_size=11)
+        st.plotly_chart(plot_layout(fig), use_container_width=True)
+
 
 def pg_topk(products):
-    st.markdown('<div class="pg">🏷️ Top Produits</div>',unsafe_allow_html=True)
-    st.markdown('<div class="pg-s">Classement par score.</div>',unsafe_allow_html=True)
+    st.markdown('<div class="pg-title">Classement produits</div>', unsafe_allow_html=True)
+    st.markdown('<div class="pg-sub">Score pondéré : note · avis · compétitivité prix · disponibilité.</div>', unsafe_allow_html=True)
+
     df=pd.DataFrame(products)
     for c in ['price','rating','reviews_count']:
         if c in df.columns: df[c]=pd.to_numeric(df[c],errors='coerce').fillna(0)
-    cf,ct=st.columns([1,3])
+
+    cf, ct = st.columns([1,3])
     with cf:
         cats=["Tous"]+sorted(df['category'].dropna().unique().tolist())
-        cat=st.selectbox("",cats,label_visibility="collapsed")
-        k=st.slider("Top",1,min(20,len(df)),10)
-        mx=int(df['price'].max()); pr=st.slider("Prix max",0,mx,mx)
+        cat=st.selectbox("Catégorie", cats, label_visibility="visible")
+        k=st.slider("Afficher", 1, min(20,len(df)), 10, label_visibility="visible")
+        mx=int(df['price'].max()); pr=st.slider("Prix max ($)", 0, mx, mx, label_visibility="visible")
+
     mask=(df['price']>=0)&(df['price']<=pr)
     if cat!="Tous": mask&=(df['category']==cat)
-    df_top=topk(df[mask].to_dict('records'),k=k)
+    df_top=topk(df[mask].to_dict('records'), k=k)
+
     if not df_top.empty:
-        d=df_top[["name","category","price","rating","reviews_count","_s"]].copy().rename(columns={"name":"Produit","category":"Catégorie","price":"Prix ($)","rating":"Note","reviews_count":"Avis","_s":"Score"})
-        st.dataframe(d,use_container_width=True,hide_index=True)
-    else: st.warning("Aucun résultat.")
+        d=df_top[["name","category","price","rating","reviews_count","_s"]].copy()
+        d=d.rename(columns={"name":"Produit","category":"Catégorie","price":"Prix ($)","rating":"Note","reviews_count":"Avis","_s":"Score"})
+        d["Score"]=d["Score"].round(4)
+        st.dataframe(d, use_container_width=True, hide_index=True)
+    else:
+        st.warning("Aucun produit ne correspond aux filtres.")
+
 
 def pg_ml(products):
-    st.markdown('<div class="pg">📈 Analyses</div>',unsafe_allow_html=True)
-    st.markdown('<div class="pg-s">Clustering, prévisions, tendances.</div>',unsafe_allow_html=True)
+    st.markdown('<div class="pg-title">Analyses & Modèles</div>', unsafe_allow_html=True)
+    st.markdown('<div class="pg-sub">Clustering, prévisions de prix, tendances émergentes.</div>', unsafe_allow_html=True)
+
     df=pd.DataFrame(products)
     for c in ['price','rating','reviews_count']:
         if c in df.columns: df[c]=pd.to_numeric(df[c],errors='coerce').fillna(0)
+
     from src.data_analysis import generate_trend_insights
     ti=generate_trend_insights(products)
-    t1,t2,t3=st.tabs(["🔬 Clusters","🔮 Prévisions","🚀 Tendances"])
+    t1,t2,t3=st.tabs(["Clustering", "Prévisions de prix", "Tendances"])
+
     with t1:
         from sklearn.preprocessing import StandardScaler; from sklearn.decomposition import PCA
         import base64,io,joblib,numpy as np
@@ -226,94 +598,143 @@ def pg_ml(products):
                     return joblib.load(io.BytesIO(base64.b64decode(row['model_data']))) if row else None
                 models[mn]=asyncio.run(_ld())
             except: pass
-        mc=st.radio("",["PCA","KMeans","DBSCAN","RF"],horizontal=True,key="mc")
+
+        mc=st.radio("Algorithme", ["PCA","KMeans","DBSCAN","RF"], horizontal=True, key="mc")
+
         if mc=="PCA":
             pca=PCA(n_components=2); Xp=pca.fit_transform(Xs); df['_x'],df['_y']=Xp[:,0],Xp[:,1]
-            fig=px.scatter(df,x='_x',y='_y',color='category',hover_name='name',title=f"PCA ({pca.explained_variance_ratio_.sum()*100:.0f}%)",color_discrete_sequence=px.colors.qualitative.Set2).update_layout(plot_bgcolor='rgba(0,0,0,0)',paper_bgcolor='rgba(0,0,0,0)',font_color='#bbb',title_font_color='#333')
-            st.plotly_chart(fig,use_container_width=True)
+            fig=px.scatter(df,x='_x',y='_y',color='category',hover_name='name',
+                           title=f"Analyse PCA — variance expliquée {pca.explained_variance_ratio_.sum()*100:.0f}%",
+                           color_discrete_sequence=PLOT_COLORS)
+            st.plotly_chart(plot_layout(fig), use_container_width=True)
         elif mc=="KMeans" and models.get('kmeans'):
             m=models['kmeans']; df['_cl']=m.predict(Xs).astype(str)
-            fig=px.scatter(df,x='price',y='rating',color='_cl',hover_name='name',title=f"KMeans (K={m.n_clusters})",color_discrete_sequence=px.colors.qualitative.Set2).update_layout(plot_bgcolor='rgba(0,0,0,0)',paper_bgcolor='rgba(0,0,0,0)',font_color='#bbb',title_font_color='#333')
-            st.plotly_chart(fig,use_container_width=True)
+            fig=px.scatter(df,x='price',y='rating',color='_cl',hover_name='name',
+                           title=f"KMeans — {m.n_clusters} clusters",color_discrete_sequence=PLOT_COLORS)
+            st.plotly_chart(plot_layout(fig), use_container_width=True)
         elif mc=="DBSCAN" and models.get('dbscan'):
             m=models['dbscan']; l=m.fit_predict(Xs); df['_cl']=l.astype(str)
-            fig=px.scatter(df[l!=-1],x='price',y='rating',color='_cl',hover_name='name',title="DBSCAN",color_discrete_sequence=px.colors.qualitative.Set2).update_layout(plot_bgcolor='rgba(0,0,0,0)',paper_bgcolor='rgba(0,0,0,0)',font_color='#bbb',title_font_color='#333')
-            st.plotly_chart(fig,use_container_width=True)
+            fig=px.scatter(df[l!=-1],x='price',y='rating',color='_cl',hover_name='name',
+                           title="DBSCAN Clustering",color_discrete_sequence=PLOT_COLORS)
+            st.plotly_chart(plot_layout(fig), use_container_width=True)
         elif mc=="RF" and models.get('random_forest'):
             m=models['random_forest']; df['_cl']=m.predict(Xs).astype(str)
-            fig=px.scatter(df,x='price',y='rating',color='_cl',hover_name='name',title="RF",color_discrete_sequence=px.colors.qualitative.Set2).update_layout(plot_bgcolor='rgba(0,0,0,0)',paper_bgcolor='rgba(0,0,0,0)',font_color='#bbb',title_font_color='#333')
-            st.plotly_chart(fig,use_container_width=True)
+            fig=px.scatter(df,x='price',y='rating',color='_cl',hover_name='name',
+                           title="Random Forest — Prédictions",color_discrete_sequence=PLOT_COLORS)
+            st.plotly_chart(plot_layout(fig), use_container_width=True)
         else:
             from sklearn.cluster import KMeans,DBSCAN; from sklearn.ensemble import RandomForestClassifier
             if mc=="KMeans": l=KMeans(n_clusters=min(4,len(df)),random_state=42,n_init=10).fit_predict(Xs)
             elif mc=="DBSCAN": l=DBSCAN(eps=0.5,min_samples=5).fit_predict(Xs)
             else: l=RandomForestClassifier(n_estimators=50,random_state=42).fit(Xs,(X[:,0]>np.median(X[:,0])).astype(int)).predict(Xs)
             df['_cl']=l.astype(str)
-            fig=px.scatter(df,x='price',y='rating',color='_cl',hover_name='name',title=mc,color_discrete_sequence=px.colors.qualitative.Set2).update_layout(plot_bgcolor='rgba(0,0,0,0)',paper_bgcolor='rgba(0,0,0,0)',font_color='#bbb',title_font_color='#333')
-            st.plotly_chart(fig,use_container_width=True)
+            fig=px.scatter(df,x='price',y='rating',color='_cl',hover_name='name',
+                           title=mc,color_discrete_sequence=PLOT_COLORS)
+            st.plotly_chart(plot_layout(fig), use_container_width=True)
+
     with t2:
         fc=ti.get('category_price_forecasts',{}); tr=ti.get('category_price_trends',{})
         if fc:
-            cat=st.selectbox("",list(fc.keys()),key="pc",label_visibility="collapsed")
+            cat=st.selectbox("Catégorie", list(fc.keys()), key="pc")
             c1,c2=st.columns([2,1])
             with c1:
                 f=fc[cat]
                 fig=go.Figure()
-                fig.add_trace(go.Scatter(x=f['dates'],y=f['values'],mode='lines+markers',name='30j',line=dict(color='#333',width=2,dash='dash')))
-                fig.add_trace(go.Scatter(x=f['dates']+f['dates'][::-1],y=f['upper']+f['lower'][::-1],fill='toself',fillcolor='rgba(0,0,0,0.04)',line=dict(color='rgba(0,0,0,0)'),hoverinfo="skip",name='IC'))
-                fig.update_layout(title=f"{cat}",xaxis_title="Date",yaxis_title="Prix ($)",hovermode='x unified',plot_bgcolor='rgba(0,0,0,0)',paper_bgcolor='rgba(0,0,0,0)',font_color='#bbb',title_font_color='#333',height=260)
-                st.plotly_chart(fig,use_container_width=True)
+                fig.add_trace(go.Scatter(x=f['dates'],y=f['values'],mode='lines+markers',name='Prévision 30j',
+                                         line=dict(color='#1A1714',width=2,dash='dash'),
+                                         marker=dict(size=4,color='#1A1714')))
+                fig.add_trace(go.Scatter(x=f['dates']+f['dates'][::-1],y=f['upper']+f['lower'][::-1],
+                                         fill='toself',fillcolor='rgba(166,124,82,0.08)',
+                                         line=dict(color='rgba(0,0,0,0)'),hoverinfo="skip",name='Intervalle confiance'))
+                fig.update_layout(title=f"Prévision de prix — {cat}",xaxis_title="Date",yaxis_title="Prix ($)",hovermode='x unified')
+                st.plotly_chart(plot_layout(fig,height=260), use_container_width=True)
             with c2:
                 ci=tr.get(cat,{})
-                if ci: st.markdown(f'<div class="cd"><div class="cd-l">Tendance</div><div style="font-size:0.95rem;font-weight:600;color:{"#2E7D32" if ci.get("trend")=="growing" else "#C62828" if ci.get("trend")=="declining" else "#E65100"};">{ci.get("trend","N/A")}</div><div style="margin-top:0.35rem;"><span class="cd-l">Moy.</span><div style="font-weight:600;">${ci.get("avg_price",0):.2f}</div></div></div>',unsafe_allow_html=True)
-        else: st.info("≥5 produits/catégorie requis.")
+                if ci:
+                    trend=ci.get("trend","N/A")
+                    if trend=="growing": badge=f'<span class="trend-badge trend-up">{icon("arrow-up",11,"#2D6A4F")} Croissance</span>'
+                    elif trend=="declining": badge=f'<span class="trend-badge trend-down">{icon("arrow-down",11,"#9B2335")} Déclin</span>'
+                    else: badge=f'<span class="trend-badge trend-flat">{icon("minus",11,"#7A7168")} Stable</span>'
+                    st.markdown(f'''
+                    <div class="data-card">
+                        <div class="data-card-label">Tendance</div>
+                        <div style="margin:0.3rem 0 0.6rem;">{badge}</div>
+                        <div class="data-card-label" style="margin-top:0.5rem;">Prix moyen</div>
+                        <div style="font-size:1.1rem;font-weight:700;color:var(--ink-0);">${ci.get("avg_price",0):.2f}</div>
+                    </div>
+                    ''', unsafe_allow_html=True)
+        else:
+            st.info("Au moins 5 produits par catégorie sont requis pour les prévisions.")
+
     with t3:
         tr=ti.get('trending_products',[]); acc=ti.get('xgboost_accuracy')
         ca,cb=st.columns([1,2])
         with ca:
-            if tr and len(products)>=30: st.metric("Accuracy",f"{acc:.1%}" if acc else "N/A"); st.success("✅ OK")
-            elif len(products)>=30: st.info("Non disponible")
-            else: st.warning(f"≥30 requis ({len(products)})")
+            if tr and len(products)>=30:
+                st.metric("Accuracy XGBoost", f"{acc:.1%}" if acc else "N/A")
+                st.success("Modèle opérationnel")
+            elif len(products)>=30: st.info("Modèle non disponible")
+            else: st.warning(f"Minimum 30 produits requis ({len(products)} actuellement)")
         with cb:
             if tr:
-                for i,p in enumerate(tr[:5],1): st.markdown(f"**{i}.** {p['name']} — `{p['score']:.3f}`")
-            else: st.info("Aucun")
+                for i,p in enumerate(tr[:5],1):
+                    st.markdown(f'<div style="font-size:0.8rem;padding:0.2rem 0;border-bottom:1px solid var(--border);"><span style="color:var(--ink-3);font-family:\'DM Mono\',monospace;">{i:02d}</span>  <strong>{p["name"]}</strong>  <span style="color:var(--brass);font-family:\'DM Mono\',monospace;float:right;">{p["score"]:.3f}</span></div>', unsafe_allow_html=True)
+            else: st.info("Aucun produit tendance identifié.")
         if tr:
             sdf=pd.DataFrame(tr[:8])
-            fig=px.bar(sdf,x='name',y='score',color='score',color_continuous_scale='Oranges',labels={'name':'','score':''})
-            fig.update_layout(plot_bgcolor='rgba(0,0,0,0)',paper_bgcolor='rgba(0,0,0,0)',font_color='#bbb',height=160,margin=dict(l=5,r=5,t=5,b=25))
-            st.plotly_chart(fig,use_container_width=True)
+            fig=px.bar(sdf,x='name',y='score',color='score',color_continuous_scale=[[0,'#D8D1C6'],[1,'#A67C52']],labels={'name':'','score':''})
+            fig.update_layout(coloraxis_showscale=False)
+            st.plotly_chart(plot_layout(fig,height=180,margin=dict(l=5,r=5,t=10,b=30)), use_container_width=True)
+
 
 def pg_competitive(products):
-    st.markdown('<div class="pg">🏆 Concurrence</div>',unsafe_allow_html=True)
-    st.markdown('<div class="pg-s">Analyses Groq.</div>',unsafe_allow_html=True)
+    st.markdown('<div class="pg-title">Intelligence concurrentielle</div>', unsafe_allow_html=True)
+    st.markdown('<div class="pg-sub">Analyses comparatives, produits émergents, recommandations stratégiques.</div>', unsafe_allow_html=True)
+
     from src.llm.competitive_analysis import CompetitiveAnalysis
     gk=os.getenv("GROQ_API_KEY","")
-    if not gk: st.warning("GROQ_API_KEY → .env"); return
-    if not products or len(products)==0: st.info("Aucun produit."); return
+    if not gk: st.warning("Clé GROQ_API_KEY manquante — configurez votre .env"); return
+    if not products: st.info("Aucun produit chargé."); return
+
     b1,b2,b3,_=st.columns([1,1,1,1.5])
-    with b1: r1=st.button("🔍 Comparer",type="primary",use_container_width=True,key="c1")
-    with b2: r2=st.button("📈 Émergents",use_container_width=True,key="c2")
-    with b3: r3=st.button("🎯 Stratégie",use_container_width=True,key="c3")
+    with b1:
+        r1=st.button(f"{icon('search',13,'currentColor')} Comparer", type="primary", use_container_width=True, key="c1")
+    with b2:
+        r2=st.button(f"{icon('trending-up',13,'currentColor')} Émergents", use_container_width=True, key="c2")
+    with b3:
+        r3=st.button(f"{icon('compass',13,'currentColor')} Stratégie", use_container_width=True, key="c3")
+
     if "cr" not in st.session_state: st.session_state.cr={}
+
     try:
         an=CompetitiveAnalysis(groq_key=gk)
+
         if r1 or st.session_state.get("cs1"):
             st.session_state.cs1=True
             if "cmp" not in st.session_state.cr:
-                with st.spinner("Groq..."): st.session_state.cr["cmp"]=an.compare_products(products)
+                with st.spinner("Analyse en cours…"): st.session_state.cr["cmp"]=an.compare_products(products)
             res=st.session_state.cr["cmp"]
             if res.get("status")=="completed":
                 for comp in res.get("comparisons",[]):
-                    with st.expander(f"📦 {comp['category']} ({comp['products_compared']})",expanded=True):
+                    with st.expander(f"{comp['category']} — {comp['products_compared']} produits", expanded=True):
                         ca,cb=st.columns([1,2])
-                        with ca: st.markdown(f'<div class="cd"><div class="cd-l">Prix moy.</div><div style="font-size:1rem;font-weight:700;">${comp["price_range"]["avg"]:.0f}</div><div class="cd-l" style="margin-top:0.35rem;">Note</div><div style="font-size:1rem;font-weight:700;">{comp["avg_rating"]:.2f}/5</div></div>',unsafe_allow_html=True)
-                        with cb: st.markdown(f'<div class="cd">{comp.get("analysis_text","")}</div>',unsafe_allow_html=True)
+                        with ca:
+                            st.markdown(f'''
+                            <div class="data-card">
+                                <div class="data-card-label">Prix moyen</div>
+                                <div style="font-size:1.1rem;font-weight:700;color:var(--ink-0);margin-bottom:0.5rem;">${comp["price_range"]["avg"]:.0f}</div>
+                                <div class="data-card-label">Note</div>
+                                <div style="font-size:1.1rem;font-weight:700;color:var(--ink-0);">{comp["avg_rating"]:.2f} <span style="color:var(--ink-3);font-size:0.75rem;">/5</span></div>
+                            </div>
+                            ''', unsafe_allow_html=True)
+                        with cb:
+                            st.markdown(f'<div class="data-card" style="font-size:0.8rem;color:var(--ink-1);line-height:1.6;">{comp.get("analysis_text","")}</div>', unsafe_allow_html=True)
             else: st.info(res.get("message",""))
+
         if r2 or st.session_state.get("cs2"):
             st.session_state.cs2=True
             if "emg" not in st.session_state.cr:
-                with st.spinner("Groq..."): st.session_state.cr["emg"]=an.generate_emerging_report(products)
+                with st.spinner("Analyse en cours…"): st.session_state.cr["emg"]=an.generate_emerging_report(products)
             res=st.session_state.cr["emg"]
             if res.get("status")=="completed":
                 el=res.get("emerging_products",[])
@@ -321,116 +742,185 @@ def pg_competitive(products):
                     edf=pd.DataFrame(el)
                     cols=[c for c in ["rank","name","category","price","rating","reviews_count","emergence_score"] if c in edf.columns]
                     disp=edf[cols].rename(columns={"rank":"#","name":"Produit","category":"Catégorie","price":"Prix ($)","rating":"Note","reviews_count":"Avis","emergence_score":"Score"})
-                    st.dataframe(disp,use_container_width=True,hide_index=True)
-                    fig=px.bar(edf,x='name',y='emergence_score',color='emergence_score',color_continuous_scale='Greens',labels={'name':'','emergence_score':''})
-                    fig.update_layout(plot_bgcolor='rgba(0,0,0,0)',paper_bgcolor='rgba(0,0,0,0)',font_color='#bbb',height=160,margin=dict(l=5,r=5,t=5,b=25))
-                    st.plotly_chart(fig,use_container_width=True)
+                    st.dataframe(disp, use_container_width=True, hide_index=True)
+                    fig=px.bar(edf,x='name',y='emergence_score',color='emergence_score',
+                               color_continuous_scale=[[0,'#D8EDDF'],[1,'#2D6A4F']],
+                               labels={'name':'','emergence_score':''})
+                    fig.update_layout(coloraxis_showscale=False)
+                    st.plotly_chart(plot_layout(fig,height=180,margin=dict(l=5,r=5,t=10,b=30)), use_container_width=True)
                 rt=res.get("report_text","")
-                if rt: st.markdown(f'<div class="cd">{rt}</div>',unsafe_allow_html=True)
+                if rt: st.markdown(f'<div class="data-card" style="font-size:0.8rem;color:var(--ink-1);line-height:1.6;">{rt}</div>', unsafe_allow_html=True)
             else: st.info(res.get("message",""))
+
         if r3 or st.session_state.get("cs3"):
             st.session_state.cs3=True
             if "rec" not in st.session_state.cr:
-                with st.spinner("Groq..."): st.session_state.cr["rec"]=an.generate_strategic_recommendations(products)
+                with st.spinner("Analyse en cours…"): st.session_state.cr["rec"]=an.generate_strategic_recommendations(products)
             res=st.session_state.cr["rec"]
             if res.get("status")=="completed":
                 segs=res.get("segments",[])
                 if segs:
                     for s in segs[:5]:
-                        st.markdown(f'<div style="background:#f8f8f8;border:1px solid #eee;border-radius:8px;padding:0.35rem 0.65rem;margin-bottom:0.2rem;"><div style="display:flex;justify-content:space-between;"><span style="font-weight:600;">{s["category"]}</span><span style="color:#bbb;">{s["value_score"]:.3f}</span></div><div style="color:#aaa;font-size:0.68rem;">{s["product_count"]} produits · ${s["avg_price"]:.0f} · {s["avg_rating"]}/5</div></div>',unsafe_allow_html=True)
+                        st.markdown(f'''
+                        <div class="seg-row">
+                            <div>
+                                <div class="seg-name">{s["category"]}</div>
+                                <div class="seg-meta">{s["product_count"]} produits · ${s["avg_price"]:.0f} · {s["avg_rating"]}/5</div>
+                            </div>
+                            <div class="seg-score">{s["value_score"]:.3f}</div>
+                        </div>
+                        ''', unsafe_allow_html=True)
                 rt=res.get("recommendations_text","")
-                if rt: st.markdown(f'<div class="cd">{rt}</div>',unsafe_allow_html=True)
+                if rt: st.markdown(f'<div class="data-card" style="margin-top:0.75rem;font-size:0.8rem;color:var(--ink-1);line-height:1.6;">{rt}</div>', unsafe_allow_html=True)
             else: st.info(res.get("message",""))
-    except Exception as e: st.error(f"❌ {str(e)}"); logger.error(f"CA: {e}",exc_info=True)
+
+    except Exception as e:
+        st.error(f"Erreur : {str(e)}")
+        logger.error(f"Competitive analysis error: {e}", exc_info=True)
+
 
 def pg_infra():
-    st.markdown('<div class="pg">⚙️ Infrastructure</div>',unsafe_allow_html=True)
-    st.markdown('<div class="pg-s">Pipeline & Services.</div>',unsafe_allow_html=True)
-    c1,c2=st.columns(2)
+    st.markdown('<div class="pg-title">Infrastructure</div>', unsafe_allow_html=True)
+    st.markdown('<div class="pg-sub">Pipeline ML · Services MCP · Orchestration.</div>', unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
+
     with c1:
-        st.markdown('<div class="cd"><div class="cd-h">🚀 Pipeline</div>',unsafe_allow_html=True)
-        if st.button("▶️ Lancer",type="primary",use_container_width=True):
-            with st.spinner("..."):
+        st.markdown(f'''
+        <div class="data-card">
+            <div class="data-card-header">{icon("activity",14,"#7A7168")} Pipeline ML</div>
+            <div class="pipe-steps">
+                <div class="pipe-step"><div class="pipe-step-dot done"></div>Scraping</div>
+                <div class="pipe-step"><div class="pipe-step-dot done"></div>Prep</div>
+                <div class="pipe-step"><div class="pipe-step-dot"></div>ML</div>
+                <div class="pipe-step"><div class="pipe-step-dot"></div>Base</div>
+            </div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+        if st.button(f"{icon('play',13,'currentColor')} Lancer le pipeline", type="primary", use_container_width=True):
+            with st.spinner("Exécution en cours…"):
                 try:
                     import subprocess
                     h=os.getenv("KFP_HOST","http://host.docker.internal:61567")
-                    r=subprocess.run(["python","scripts/run_kfp.py","--host",h],capture_output=True,text=True,timeout=120,cwd="/app")
-                    if r.returncode==0: st.success("✅ OK"); st.code(r.stdout[-150:] if len(r.stdout)>150 else r.stdout)
-                    else: st.error(f"❌ {r.stderr[-150:]}")
-                except subprocess.TimeoutExpired: st.warning("⏳ Timeout")
-                except Exception as e: st.error(f"❌ {str(e)}")
-        st.markdown('<div style="color:#bbb;font-size:0.7rem;margin-top:0.35rem;">Scraping → Prep → ML → DB</div></div>',unsafe_allow_html=True)
+                    r=subprocess.run(["python","scripts/run_kfp.py","--host",h],
+                                     capture_output=True,text=True,timeout=120,cwd="/app")
+                    if r.returncode==0:
+                        st.success("Pipeline exécuté avec succès")
+                        st.code(r.stdout[-200:] if len(r.stdout)>200 else r.stdout)
+                    else:
+                        st.error(f"Erreur : {r.stderr[-200:]}")
+                except subprocess.TimeoutExpired: st.warning("Délai d'exécution dépassé")
+                except Exception as e: st.error(f"Erreur : {str(e)}")
+
     with c2:
-        eps=[("GET /health","Health"),("/tools/scrape_shopify","Shopify"),("/tools/scrape_woocommerce","Woo"),("/tools/analyze_top_k","Top-K"),("/tools/competitive_analysis","Concurrence")]
-        h='<div class="cd"><div class="cd-h">📡 MCP (8000)</div>'
-        for e,d in eps: h+=f'<div style="display:flex;justify-content:space-between;padding:0.12rem 0;border-bottom:1px solid #f5f5f5;font-size:0.76rem;"><span style="color:#666;font-family:monospace;">{e}</span><span style="color:#bbb;">{d}</span></div>'
-        h+='</div>'; st.markdown(h,unsafe_allow_html=True)
+        eps=[
+            ("GET /health","Health check"),
+            ("/tools/scrape_shopify","Shopify scraper"),
+            ("/tools/scrape_woocommerce","WooCommerce scraper"),
+            ("/tools/analyze_top_k","Classement Top-K"),
+            ("/tools/competitive_analysis","Analyse concurrence"),
+        ]
+        rows_html=''.join([f'<div class="ep-row"><span class="ep-path">{e}</span><span class="ep-desc">{d}</span></div>' for e,d in eps])
+        st.markdown(f'''
+        <div class="data-card">
+            <div class="data-card-header">{icon("wifi",14,"#7A7168")} Endpoints MCP <span style="color:var(--ink-3);font-size:0.68rem;margin-left:auto;font-family:\'DM Mono\',monospace;">:8000</span></div>
+            {rows_html}
+        </div>
+        ''', unsafe_allow_html=True)
+
 
 # ─── MAIN ─────────────────────────────────────────────────────
 
 def main():
     if "page" not in st.session_state: st.session_state.page="overview"
-    # Force reload products every time to avoid stale data
+
     p, s = load_products()
     st.session_state.pc = p
     st.session_state.sc = s
     products = p
     source = s
-    
-    # Ensure products is always a valid list of dicts
+
     if not isinstance(products, list) or len(products) == 0:
         products = []
         st.warning("Aucune donnée produit disponible.")
-    
-    # ── SIDEBAR : Chat toujours visible à gauche ──
+
+    # ── SIDEBAR ──
     with st.sidebar:
-        st.markdown("## 💬 Assistant IA")
-        st.markdown("Posez une question sur les produits.")
-        st.markdown("<hr style='margin: 0.5rem 0;'>", unsafe_allow_html=True)
-        
+        mark_svg = icon("layers", 14, "#FDFBF8")
+        msg_svg  = icon("message-square", 14, "#7A7168")
+        st.markdown(f'''
+        <div class="sidebar-logo">
+            <div class="mark">{mark_svg}</div>
+            <div>
+                <h2>Smart eCommerce</h2>
+                <span>Intelligence produit</span>
+            </div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+        st.markdown(f'<div class="sidebar-section">{msg_svg} Assistant IA</div>', unsafe_allow_html=True)
+
         if "ch" not in st.session_state: st.session_state.ch=[]
-        # Afficher l'historique (limit 6 messages)
         for msg in st.session_state.ch[-6:]:
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
-        
-        # Zone de saisie en bas de la sidebar
-        if pr := st.chat_input("Question sur les produits..."):
+
+        if pr := st.chat_input("Posez une question sur les produits…"):
             st.session_state.ch.append({"role":"user","content":pr})
-            with st.chat_message("user"):
-                st.markdown(pr)
+            with st.chat_message("user"): st.markdown(pr)
             with st.chat_message("assistant"):
                 with st.spinner(""):
                     r = ask(pr, products)
                 st.markdown(r)
             st.session_state.ch.append({"role":"assistant","content":r})
-    
-    # ── MAIN CONTENT ──
-    cls = "tag" + (" g" if source=="PostgreSQL" else "")
-    st.markdown(f'<div class="hdr"><h1>📊 Smart eCommerce</h1><span class="{cls}">{len(products)} produits</span></div>',unsafe_allow_html=True)
-    
-    pages=[("📊","Vue d\'ensemble","overview"),("🏷️","Top","topk"),("📈","Analyses","analysis"),("🏆","Concurrence","competitive"),("⚙️","Infra","infra")]
-    nav='<div class="pill">'
-    for _,label,key in pages:
-        nav+=f'<button class="{"on" if st.session_state.page==key else ""}" onclick="alert(\'{key}\')">{label}</button>'
-    nav+='</div>'
-    st.markdown(nav,unsafe_allow_html=True)
-    
+
+    # ── HEADER ──
+    is_live = (source == "PostgreSQL")
+    badge_cls = "badge live" if is_live else "badge"
+    badge_txt = f"{icon('check-circle',11,'#2D6A4F' if is_live else '#7A7168')} {len(products)} produits · {source}"
+    mark_svg = icon("layers", 15, "#FDFBF8")
+
+    st.markdown(f'''
+    <div class="app-header">
+        <div class="wordmark">
+            <div class="mark">{mark_svg}</div>
+            <h1>Smart eCommerce</h1>
+        </div>
+        <span class="{badge_cls}">{badge_txt}</span>
+    </div>
+    ''', unsafe_allow_html=True)
+
+    # ── NAV ──
+    pages=[
+        (icon("bar-chart",13),"Vue d'ensemble","overview"),
+        (icon("tag",13),"Classement","topk"),
+        (icon("trending-up",13),"Analyses","analysis"),
+        (icon("award",13),"Concurrence","competitive"),
+        (icon("settings",13),"Infrastructure","infra"),
+    ]
+
     cols=st.columns(len(pages))
-    for i,(_,label,key) in enumerate(pages):
+    for i,(ic_svg,label,key) in enumerate(pages):
         with cols[i]:
-            if st.button(label,key=f"n{key}",use_container_width=True,type="secondary" if st.session_state.page!=key else "primary"): st.session_state.page=key; st.rerun()
-    
-    st.markdown("<hr>",unsafe_allow_html=True)
-    
-    p=st.session_state.page
-    if p=="overview": pg_overview(products,source)
-    elif p=="topk": pg_topk(products)
-    elif p=="analysis": pg_ml(products)
-    elif p=="competitive": pg_competitive(products)
-    elif p=="infra": pg_infra()
-    
-    st.markdown(f'<div class="ft">Smart eCommerce · {len(products)} produits · {source}</div>',unsafe_allow_html=True)
+            t = "primary" if st.session_state.page==key else "secondary"
+            if st.button(f"{label}", key=f"n{key}", use_container_width=True, type=t):
+                st.session_state.page=key; st.rerun()
+
+    st.markdown("<hr>", unsafe_allow_html=True)
+
+    pg=st.session_state.page
+    if pg=="overview":    pg_overview(products, source)
+    elif pg=="topk":      pg_topk(products)
+    elif pg=="analysis":  pg_ml(products)
+    elif pg=="competitive": pg_competitive(products)
+    elif pg=="infra":     pg_infra()
+
+    st.markdown(f'''
+    <div class="app-footer">
+        Smart eCommerce Intelligence &nbsp;·&nbsp; {len(products)} produits &nbsp;·&nbsp; {source}
+    </div>
+    ''', unsafe_allow_html=True)
 
 if __name__=="__main__": main()
 run_dashboard=main
