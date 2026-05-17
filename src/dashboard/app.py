@@ -691,7 +691,7 @@ def pg_ml(products):
             else: st.info("Aucun produit tendance identifié.")
         if tr:
             sdf=pd.DataFrame(tr[:8])
-            fig=px.bar(sdf,x='name',y='score',color='score',color_continuous_scale=[[0,'#C7D2FE'],[1,'#6366F1']],labels={'name':'','score':''})
+            fig=px.bar(sdf,x='name',y='score',color='score',color_continuous_scale=[[0,'#C7D2FE'],[1,'#6366F1']],labels={'name':'','score':''})            
             fig.update_layout(coloraxis_showscale=False)
             st.plotly_chart(plot_layout(fig,height=180,margin=dict(l=5,r=5,t=10,b=30)), use_container_width=True)
 
@@ -707,11 +707,11 @@ def pg_competitive(products):
 
     b1,b2,b3,_=st.columns([1,1,1,1.5])
     with b1:
-        r1=st.button(f"{icon('search',13,'currentColor')} Comparer", type="primary", use_container_width=True, key="c1")
+        r1=st.button("🔍 Comparer", type="primary", use_container_width=True, key="c1")
     with b2:
-        r2=st.button(f"{icon('trending-up',13,'currentColor')} Émergents", use_container_width=True, key="c2")
+        r2=st.button("📈 Émergents", use_container_width=True, key="c2")
     with b3:
-        r3=st.button(f"{icon('compass',13,'currentColor')} Stratégie", use_container_width=True, key="c3")
+        r3=st.button("🧭 Stratégie", use_container_width=True, key="c3")
 
     if "cr" not in st.session_state: st.session_state.cr={}
 
@@ -807,7 +807,7 @@ def pg_infra():
         </div>
         ''', unsafe_allow_html=True)
 
-        if st.button(f"{icon('play',13,'currentColor')} Lancer le pipeline", type="primary", use_container_width=True):
+        if st.button("▶️ Lancer le pipeline", type="primary", use_container_width=True):
             with st.spinner("Exécution en cours…"):
                 try:
                     import subprocess
